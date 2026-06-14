@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dotted_border/dotted_border.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/firebase_service.dart';
@@ -51,7 +51,7 @@ class _SentenceBuilderScreenState extends ConsumerState<SentenceBuilderScreen> w
   Widget build(BuildContext context) {
     final sbState = ref.watch(sentenceBuilderProvider(_challenges));
     final notifier = ref.read(sentenceBuilderProvider(_challenges).notifier);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
 
     if (sbState.isFinished) {
       return _ResultScreen(
@@ -167,7 +167,7 @@ class _SentenceBuilderScreenState extends ConsumerState<SentenceBuilderScreen> w
                 Padding(
                   padding: const EdgeInsets.only(top: 12, left: 24, right: 24),
                   child: Text(
-                    l10n.correctAnswer(currentChallenge.correctSentence),
+                    translations.tr('correctAnswer', {'sentence': currentChallenge.correctSentence}),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/app_lock_service.dart';
@@ -47,7 +47,7 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
     final isButtonEnabled = state.selectedApps.isNotEmpty;
 
     return Scaffold(
@@ -70,7 +70,7 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        l10n.selectAppsTitle,
+                        translations.get('selectAppsTitle'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -125,7 +125,7 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                       child: ElevatedButton(
                         onPressed: isButtonEnabled
                             ? () async {
-                                await _showPermissionDialog(context, l10n);
+                                await _showPermissionDialog(context, translations);
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -134,7 +134,7 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                           disabledBackgroundColor: Colors.white.withOpacity(0.3),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: Text(l10n.next, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: Text(translations.get('next'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -150,12 +150,12 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
     );
   }
 
-  Future<void> _showPermissionDialog(BuildContext context, AppLocalizations l10n) async {
+  Future<void> _showPermissionDialog(BuildContext context, Translations translations) async {
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return _PermissionRequestDialog(l10n: l10n);
+        return _PermissionRequestDialog(translations: translations);
       },
     );
     
@@ -248,9 +248,9 @@ class _AppCard extends StatelessWidget {
 }
 
 class _PermissionRequestDialog extends StatelessWidget {
-  final AppLocalizations l10n;
+  final Translations translations;
 
-  const _PermissionRequestDialog({required this.l10n});
+  const _PermissionRequestDialog({required this.translations});
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +264,7 @@ class _PermissionRequestDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.permissionsNeeded,
+              translations.get('permissionsNeeded'),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -276,15 +276,17 @@ class _PermissionRequestDialog extends StatelessWidget {
             if (Platform.isAndroid) ...[
               _PermissionItem(
                 icon: '📊',
-                title: l10n.usageAccess,
-                description: l10n.usageAccessDesc,
+                title: translations.get('usageAccess'),
+                description: translations.get('usageAccessDesc'),
+                translations: translations,
                 onRequest: () => appLockServiceProvider.requestUsageStatsPermission(),
               ),
               const SizedBox(height: 20),
               _PermissionItem(
                 icon: '♿',
-                title: l10n.accessibilityService,
-                description: l10n.accessibilityServiceDesc,
+                title: translations.get('accessibilityService'),
+                description: translations.get('accessibilityServiceDesc'),
+                translations: translations,
                 onRequest: () => appLockServiceProvider.requestAccessibilityPermission(),
               ),
             ],
@@ -292,8 +294,9 @@ class _PermissionRequestDialog extends StatelessWidget {
             if (Platform.isIOS) ...[
               _PermissionItem(
                 icon: '📱',
-                title: l10n.screenTimePermission,
-                description: l10n.screenTimePermissionDesc,
+                title: translations.get('screenTimePermission'),
+                description: translations.get('screenTimePermissionDesc'),
+                translations: translations,
                 onRequest: () => appLockServiceProvider.requestScreenTimePermission(),
               ),
             ],
@@ -301,9 +304,10 @@ class _PermissionRequestDialog extends StatelessWidget {
             const SizedBox(height: 20),
             _PermissionItem(
               icon: '🔔',
-              title: l10n.notificationPermission,
-              description: l10n.notificationPermissionDesc,
-              buttonLabel: l10n.enableNotifications,
+              title: translations.get('notificationPermission'),
+              description: translations.get('notificationPermissionDesc'),
+              buttonLabel: translations.get('enableNotifications'),
+              translations: translations,
               onRequest: () => appLockServiceProvider.requestNotificationPermission(),
             ),
 
@@ -314,7 +318,7 @@ class _PermissionRequestDialog extends StatelessWidget {
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
-                      l10n.skip,
+                      translations.get('skip'),
                       style: TextStyle(color: Colors.white.withOpacity(0.5)),
                     ),
                   ),
@@ -330,7 +334,7 @@ class _PermissionRequestDialog extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       minimumSize: const Size(0, 56),
                     ),
-                    child: Text(l10n.continueText, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(translations.get('continueText'), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -347,6 +351,7 @@ class _PermissionItem extends StatelessWidget {
   final String title;
   final String description;
   final String? buttonLabel;
+  final Translations translations;
   final Future<bool> Function() onRequest;
 
   const _PermissionItem({
@@ -354,12 +359,12 @@ class _PermissionItem extends StatelessWidget {
     required this.title,
     required this.description,
     this.buttonLabel,
+    required this.translations,
     required this.onRequest,
   });
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -399,7 +404,7 @@ class _PermissionItem extends StatelessWidget {
                   await onRequest();
                 },
                 child: Text(
-                  buttonLabel ?? l10n.goToSettings,
+                  buttonLabel ?? translations.get('goToSettings'),
                   style: const TextStyle(
                     color: Color(0xFF39D2C0),
                     fontSize: 13,

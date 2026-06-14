@@ -11,8 +11,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:workmanager/workmanager.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'features/onboarding/onboarding_provider.dart';
 import 'features/onboarding/language_selection_screen.dart';
@@ -42,6 +40,7 @@ import 'widgets/banner_ad_widget.dart';
 import 'widgets/loading_error_widgets.dart';
 import 'core/constants/app_colors.dart';
 import 'core/services/usage_sync_manager.dart';
+import 'core/localization/translations.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -78,7 +77,7 @@ void main() async {
     Workmanager().registerPeriodicTask(
       "daily-reset-task",
       "checkAndResetTask",
-      frequency: const Duration(minutes: 1), // Demo için 1 dakikaya indirildi
+      frequency: const Duration(minutes: 15),
       constraints: Constraints(networkType: NetworkType.connected),
     );
 
@@ -229,14 +228,6 @@ class MyApp extends ConsumerWidget {
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
-      locale: Locale(language),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('en'), Locale('tr')],
       routerConfig: router,
     );
   }
@@ -263,14 +254,15 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-class _FloatingNavBar extends StatelessWidget {
+class _FloatingNavBar extends ConsumerWidget {
   final int currentIndex;
   final Function(int) onTap;
 
   const _FloatingNavBar({required this.currentIndex, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final translations = ref.watch(translationProvider);
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -291,19 +283,19 @@ class _FloatingNavBar extends StatelessWidget {
         children: [
           _NavItem(
             icon: Icons.home_rounded,
-            label: 'Ana Sayfa',
+            label: translations.get('navHome'),
             isSelected: currentIndex == 0,
             onTap: () => onTap(0),
           ),
           _NavItem(
             icon: Icons.map_rounded,
-            label: 'Yolum',
+            label: translations.get('navPath'),
             isSelected: currentIndex == 1,
             onTap: () => onTap(1),
           ),
           _NavItem(
             icon: Icons.settings_rounded,
-            label: 'Ayarlar',
+            label: translations.get('navSettings'),
             isSelected: currentIndex == 2,
             onTap: () => onTap(2),
           ),

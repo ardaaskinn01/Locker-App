@@ -25,7 +25,6 @@ class UsageSyncManager {
   Future<void> _performSync() async {
     final uid = ref.read(firebaseServiceProvider).currentUserId;
     if (uid != null) {
-      print('DEBUG: Foreground Sync Triggered for $uid');
       await appLockServiceProvider.syncLimitStatus(uid);
     }
   }

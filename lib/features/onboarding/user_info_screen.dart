@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import 'onboarding_provider.dart';
 
@@ -30,7 +30,7 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
     final isButtonEnabled = _nameController.text.isNotEmpty && state.referralSource.isNotEmpty;
 
     return Scaffold(
@@ -52,7 +52,7 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      l10n.letsGetToKnowYou,
+                      translations.get('letsGetToKnowYou'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -79,7 +79,7 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
                         },
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: l10n.name,
+                          labelText: translations.get('name'),
                           labelStyle: const TextStyle(color: Colors.white70),
                           prefixIcon: const Icon(Icons.person, color: Colors.white70),
                         ),
@@ -87,7 +87,7 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
                       const SizedBox(height: 40),
                       // Referral Source
                       Text(
-                        l10n.howDidYouFindUs,
+                        translations.get('howDidYouFindUs'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -95,27 +95,28 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
+                      Column(
                         children: [
                           _ReferralChip(
                             label: 'TikTok',
                             isSelected: state.referralSource == 'TikTok',
                             onSelected: () => _updateReferral('TikTok'),
                           ),
+                          const SizedBox(height: 12),
                           _ReferralChip(
                             label: 'Instagram',
                             isSelected: state.referralSource == 'Instagram',
                             onSelected: () => _updateReferral('Instagram'),
                           ),
+                          const SizedBox(height: 12),
                           _ReferralChip(
-                            label: l10n.friends,
+                            label: translations.get('friends'),
                             isSelected: state.referralSource == 'Friends',
                             onSelected: () => _updateReferral('Friends'),
                           ),
+                          const SizedBox(height: 12),
                           _ReferralChip(
-                            label: l10n.other,
+                            label: translations.get('other'),
                             isSelected: state.referralSource == 'Other',
                             onSelected: () => _updateReferral('Other'),
                           ),
@@ -140,7 +141,7 @@ class _UserInfoScreenState extends ConsumerState<UserInfoScreen> {
                         foregroundColor: AppColors.primaryBlue,
                         disabledBackgroundColor: Colors.white.withOpacity(0.3),
                       ),
-                      child: Text(l10n.next),
+                      child: Text(translations.get('next')),
                     ),
                     const SizedBox(height: 20),
                     _StepIndicator(currentStep: 1),
@@ -175,14 +176,16 @@ class _ReferralChip extends StatelessWidget {
     return GestureDetector(
       onTap: onSelected,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
           ),
         ),
+        alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(

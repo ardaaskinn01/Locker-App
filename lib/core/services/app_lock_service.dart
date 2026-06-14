@@ -52,7 +52,14 @@ class AppLockService {
   }
 
   Future<bool> requestScreenTimePermission() async {
-    // This is primarily for iOS, for Android we can return true or perform placeholder check
+    if (Platform.isIOS) {
+      try {
+        final bool granted = await _lockChannel.invokeMethod('requestScreenTimePermission');
+        return granted;
+      } catch (e) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -118,15 +125,6 @@ class AppLockService {
     } catch (e) {
       print('SyncLimitStatus error: $e');
     }
-  }
-
-  Future<void> forceLockTest(String uid) async {
-    // Manually trigger a lock signal to native side for testing
-    await _lockChannel.invokeMethod('setLimitStatus', {'isLimitReached': true});
-    // Also ensure YouTube is in the locked list for this test
-    await _lockChannel.invokeMethod('setLockedApps', {
-      'packages': ['com.google.android.youtube', 'com.instagram.android', 'com.zhiliaoapp.musically']
-    });
   }
 
   String _getRealPackageName(String knownName) {

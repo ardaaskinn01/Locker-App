@@ -1,14 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/firebase_service.dart';
 import '../../models/user_model.dart';
 
 /// Firestore'daki kullanıcı belgesini gerçek zamanlı (Stream) takip eden sağlayıcı.
-final userProvider = StreamProvider<UserModel?>((ref) {
+/// FirebaseAuth oturumu yoksa otomatik anonim giriş yapılır.
+final userProvider = StreamProvider<UserModel?>((ref) async* {
   final firebaseService = ref.watch(firebaseServiceProvider);
-  final uid = firebaseService.currentUserId;
-  
-  if (uid == null) return Stream.value(null);
-  return firebaseService.getUserStream(uid);
+  String? uid = firebaseService.currentUserId;
+
+  if (uid == null) {
+    // FirebaseAuth oturumu yoksa yeniden anonim giriş yap
+    final prefs = await SharedPreferences.getInstance();
+    final onboarded = prefs.getBool('onboardingCompleted') ?? false;
+    if (!onboarded) {
+      yield null;
+      return;
+    }
+    try {
+      final cred = await FirebaseAuth.instance.signInAnonymously();
+      uid = cred.user?.uid;
+    } catch (_) {
+      yield null;
+      return;
+    }
+  }
+
+  if (uid == null) {
+    yield null;
+    return;
+  }
+
+  yield* firebaseService.getUserStream(uid);
 });
 
 /// Sadece jeton miktarını takip etmek için özelleşmiş sağlayıcı.

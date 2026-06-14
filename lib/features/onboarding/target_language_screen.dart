@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/firebase_service.dart';
 import 'onboarding_provider.dart';
@@ -26,7 +26,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
     final isLevelVisible = state.targetLanguage.isNotEmpty;
     final isButtonEnabled = state.targetLanguage.isNotEmpty && state.languageLevel.isNotEmpty;
 
@@ -52,7 +52,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            l10n.targetLangTitle,
+                            translations.get('targetLangTitle'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -98,14 +98,14 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    l10n.selectLevel,
+                                    translations.get('selectLevel'),
                                     style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 16),
                                   _LevelTile(
                                     level: 'A1',
                                     title: 'A1 - Beginner',
-                                    subtitle: l10n.a1Desc,
+                                    subtitle: translations.get('a1Desc'),
                                     isSelected: state.languageLevel == 'A1',
                                     onTap: () => ref.read(onboardingProvider.notifier).setLanguageLevel('A1'),
                                   ),
@@ -113,7 +113,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                                   _LevelTile(
                                     level: 'A2',
                                     title: 'A2 - Elementary',
-                                    subtitle: l10n.a2Desc,
+                                    subtitle: translations.get('a2Desc'),
                                     isSelected: state.languageLevel == 'A2',
                                     onTap: () => ref.read(onboardingProvider.notifier).setLanguageLevel('A2'),
                                   ),
@@ -121,7 +121,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                                   _LevelTile(
                                     level: 'B1',
                                     title: 'B1 - Intermediate',
-                                    subtitle: l10n.b1Desc,
+                                    subtitle: translations.get('b1Desc'),
                                     isSelected: state.languageLevel == 'B1',
                                     onTap: () => ref.read(onboardingProvider.notifier).setLanguageLevel('B1'),
                                   ),
@@ -144,7 +144,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                             foregroundColor: AppColors.primaryBlue,
                             disabledBackgroundColor: Colors.white.withOpacity(0.3),
                           ),
-                          child: Text(l10n.letsStart),
+                          child: Text(translations.get('letsStart')),
                         ),
                         const SizedBox(height: 20),
                         _StepIndicator(currentStep: 4),
@@ -167,7 +167,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                 children: [
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 16),
-                  Text(l10n.registering, style: const TextStyle(color: Colors.white)),
+                  Text(translations.get('registering'), style: const TextStyle(color: Colors.white)),
                 ],
               ),
             ),
@@ -178,7 +178,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
 
   Future<void> _handleFinalize() async {
     setState(() => _isLoading = true);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.read(translationProvider);
     
     try {
       final firebaseService = ref.read(firebaseServiceProvider);
@@ -207,7 +207,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("${l10n.errorOccurred}: $e"),
+            content: Text("${translations.get('errorOccurred')}: $e"),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),

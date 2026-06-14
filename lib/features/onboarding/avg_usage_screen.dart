@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import 'onboarding_provider.dart';
 
@@ -11,13 +11,13 @@ class AvgUsageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
 
     // Dinamik motivasyon metni ve emoji seçimi
     String getMotivationText() {
-      if (state.avgUsage <= 2.0) return l10n.motivationGreat;
-      if (state.avgUsage <= 4.0) return l10n.motivationGood;
-      return l10n.motivationBad;
+      if (state.avgUsage <= 2.0) return translations.get('motivationGreat');
+      if (state.avgUsage <= 4.0) return translations.get('motivationGood');
+      return translations.get('motivationBad');
     }
 
     return Scaffold(
@@ -40,7 +40,7 @@ class AvgUsageScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        l10n.avgUsageTitle,
+                        translations.get('avgUsageTitle'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -64,7 +64,7 @@ class AvgUsageScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                l10n.hours,
+                translations.get('hours'),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 24,
@@ -164,7 +164,7 @@ class AvgUsageScreen extends ConsumerWidget {
                         backgroundColor: Colors.white,
                         foregroundColor: AppColors.primaryBlue,
                       ),
-                      child: Text(l10n.next),
+                      child: Text(translations.get('next')),
                     ),
                     const SizedBox(height: 20),
                     _StepIndicator(currentStep: 2),

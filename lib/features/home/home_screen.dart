@@ -2,9 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/translations.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../core/services/seed_service.dart';
@@ -38,156 +38,155 @@ class _HomeTabView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider);
-    final user = userAsync.value;
 
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          gradient: AppColors.primaryGradient,
+        ),
+        child: userAsync.when(
+          loading: () => const _LoadingHomeView(),
+          error: (e, st) => _ErrorHomeView(onRetry: () => ref.invalidate(userProvider)),
+          data: (user) {
+            if (user == null) {
+              return _ErrorHomeView(onRetry: () => ref.invalidate(userProvider));
+            }
+            return _HomeBody(user: user);
+          },
+        ),
+      ),
+    );
+  }
+}
+class _LoadingHomeView extends StatelessWidget {
+  const _LoadingHomeView();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                color: Colors.white54,
+                strokeWidth: 2,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Yükleniyor...',
+              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorHomeView extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorHomeView({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 64, color: Colors.white.withOpacity(0.3)),
+              const SizedBox(height: 24),
+              Text(
+                'Bağlantı Hatası',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Kullanıcı verileri yüklenemedi.\nLütfen internet bağlantınızı kontrol edin.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Tekrar Dene'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF0F172A),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+            ],
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Area
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Merhaba 👋',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              user?.name ?? 'Kullanıcı',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const JetonCounter(),
-                    ],
-                  ),
-                ),
+      ),
+    );
+  }
+}
 
-                // DEMO LOCK BUTTON
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
+class _HomeBody extends ConsumerWidget {
+  final dynamic user;
+  const _HomeBody({required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final translations = ref.watch(translationProvider);
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Area
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '🛠️ DEMO: KİLİTLEME TESTİ',
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
-                        // Permission Status Checks
-                        FutureBuilder<bool>(
-                          future: AppLockService.checkAccessibilityAccess(),
-                          builder: (context, snapshot) {
-                            final isEnabled = snapshot.data ?? false;
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Erişilebilirlik İzni:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                                Text(
-                                  isEnabled ? '✅ AÇIK' : '❌ KAPALI',
-                                  style: TextStyle(
-                                    color: isEnabled ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        FutureBuilder<bool>(
-                          future: AppLockService.checkUsageAccess(),
-                          builder: (context, snapshot) {
-                            final isEnabled = snapshot.data ?? false;
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Kullanım Erişimi:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                                Text(
-                                  isEnabled ? '✅ AÇIK' : '❌ KAPALI',
-                                  style: TextStyle(
-                                    color: isEnabled ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        if (context.mounted) ...[
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final isAccEnabled = await AppLockService.checkAccessibilityAccess();
-                                if (!isAccEnabled) {
-                                  await AppLockService.openAccessibilitySettings();
-                                  return;
-                                }
-                                
-                                final uid = ref.read(firebaseServiceProvider).currentUserId;
-                                if (uid != null) {
-                                  await appLockServiceProvider.forceLockTest(uid);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Test Sinyali Gönderildi! YouTube\'u açmayı deneyin.')),
-                                    );
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text('YouTube\'u Kilitle', style: TextStyle(color: Colors.white)),
-                            ),
+                        Text(
+                          translations.get('hello'),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 16,
                           ),
-                        ],
+                        ),
+                        Text(
+                          user.name.isNotEmpty ? user.name : translations.get('other'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-                
-                const DailyUsageBar(),
-                const SizedBox(height: 32),
-                
-                const QuickActionsRow(),
-                const SizedBox(height: 140), // Large spacer for floating nav
-              ],
+                  const JetonCounter(),
+                ],
+              ),
             ),
-          ),
+            const DailyUsageBar(),
+            const SizedBox(height: 32),
+            const QuickActionsRow(),
+            const SizedBox(height: 140),
+          ],
         ),
       ),
     );
@@ -273,6 +272,7 @@ class DailyUsageBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final translations = ref.watch(translationProvider);
     final userAsync = ref.watch(userProvider);
     final spentMin = ref.watch(usageMinutesProvider);
     
@@ -303,9 +303,9 @@ class DailyUsageBar extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Bugünkü sosyal medya kullanımın',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                Text(
+                  translations.get('todayUsage'),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
                 ),
                 const SizedBox(height: 32),
                 Stack(
@@ -349,7 +349,7 @@ class DailyUsageBar extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Süre',
+                          translations.get('spentTime'),
                           style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 4),
@@ -358,7 +358,7 @@ class DailyUsageBar extends ConsumerWidget {
                             style: const TextStyle(fontSize: 18),
                             children: [
                               TextSpan(text: '$spentMin', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
-                              TextSpan(text: ' / $limitMin dk', style: TextStyle(color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.bold)),
+                              TextSpan(text: ' / $limitMin ${translations.get('hours').substring(0, 2)}', style: TextStyle(color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -372,9 +372,9 @@ class DailyUsageBar extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
                         ),
-                        child: const Text(
-                          'Limit Doldu',
-                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 13),
+                        child: Text(
+                          translations.get('limitFull'),
+                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 13),
                         ),
                       ),
                   ],
@@ -395,6 +395,7 @@ class QuickActionsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final translations = ref.watch(translationProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -404,8 +405,8 @@ class QuickActionsRow extends ConsumerWidget {
               Expanded(
                 child: _ActionCard(
                   icon: Icons.school_rounded, 
-                  label: 'Pratik Yap', 
-                  subtitle: 'Günü kurtar!',
+                  label: translations.get('doPractice'), 
+                  subtitle: translations.get('saveTheDay'),
                   onTap: () => context.push('/path'),
                 ),
               ),
@@ -413,8 +414,8 @@ class QuickActionsRow extends ConsumerWidget {
               Expanded(
                 child: _ActionCard(
                   icon: Icons.stars_rounded, 
-                  label: 'Reklam İzle', 
-                  subtitle: 'Jeton Kazan',
+                  label: translations.get('watchAd'), 
+                  subtitle: translations.get('watchAdSubtitle'),
                   onTap: () {
                     final user = ref.read(userProvider).value;
                     if (user != null) {
@@ -423,8 +424,8 @@ class QuickActionsRow extends ConsumerWidget {
                         firebaseService: ref.read(firebaseServiceProvider),
                         onRewarded: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Tebrikler! +65 Jeton Kazandın. 🪙'),
+                            SnackBar(
+                              content: Text(translations.get('rewardSuccess')),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
@@ -440,8 +441,8 @@ class QuickActionsRow extends ConsumerWidget {
           const SizedBox(height: 16),
           _ActionCard(
             icon: Icons.timer_outlined,
-            label: '5 Dakika Ek Süre Al',
-            subtitle: '100 Jeton Karşılığında',
+            label: translations.get('getExtensionTitle'),
+            subtitle: translations.get('getExtensionSubtitle'),
             isFullWidth: true,
             color: AppColors.primaryBlue.withOpacity(0.15),
             onTap: () async {
@@ -449,7 +450,7 @@ class QuickActionsRow extends ConsumerWidget {
               if (user != null) {
                 if (user.jetons < 100) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Yetersiz jeton! 🪙'), behavior: SnackBarBehavior.floating),
+                    SnackBar(content: Text(translations.get('insufficientJetons')), behavior: SnackBarBehavior.floating),
                   );
                   return;
                 }
@@ -457,7 +458,7 @@ class QuickActionsRow extends ConsumerWidget {
                    await ref.read(firebaseServiceProvider).buyBonusTime(user.uid);
                    if (context.mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Süre başarıyla eklendi! ⏳'), behavior: SnackBarBehavior.floating),
+                       SnackBar(content: Text(translations.get('bonusAdded')), behavior: SnackBarBehavior.floating),
                      );
                    }
                 } catch (e) {

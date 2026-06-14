@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import 'onboarding_provider.dart';
 import 'avg_usage_screen.dart'; // Reuse slider shapes
@@ -31,7 +31,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
     
     final double maxLimit = state.avgUsage - 1.0;
     final double savings = state.avgUsage - state.dailyLimit;
@@ -56,7 +56,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        l10n.limitTitle,
+                        translations.get('limitTitle'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -86,7 +86,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    l10n.perDay,
+                    translations.get('perDay'),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 24,
@@ -105,7 +105,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  l10n.savingsText(savings.toStringAsFixed(1)),
+                  translations.tr('savingsText', {'hours': savings.toStringAsFixed(1)}),
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -135,7 +135,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          l10n.infoText,
+                          translations.get('infoText'),
                           style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                       ),
@@ -155,7 +155,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                         backgroundColor: Colors.white,
                         foregroundColor: AppColors.primaryBlue,
                       ),
-                      child: Text(l10n.continueText),
+                      child: Text(translations.get('continueText')),
                     ),
                     const SizedBox(height: 20),
                     _StepIndicator(currentStep: 3),

@@ -14,16 +14,11 @@ class AppLockAccessibilityService : AccessibilityService() {
         
         val packageName = event.packageName?.toString() ?: return
         
-        // Log for debugging
-        Log.d("AppLock", "Window Change: $packageName")
-        
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         
         val prefs: SharedPreferences = getSharedPreferences("LockAppPrefs", Context.MODE_PRIVATE)
         val lockedAppsRaw = prefs.getString("locked_apps", "") ?: ""
         val isLimitReached = prefs.getBoolean("is_limit_reached", false)
-
-        Log.d("AppLock", "Limit: $isLimitReached, LockedApps: $lockedAppsRaw")
 
         val lockedApps = lockedAppsRaw.split(",").filter { it.isNotEmpty() }
 

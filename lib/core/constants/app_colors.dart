@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class AppColors {
   static const Color primaryBlue = Color(0xFF1A73E8);
   static const Color primaryGreen = Color(0xFF34A853);
-  static const Color gradientStart = Color(0xFF0D47A1);
-  static const Color gradientEnd = Color(0xFF00897B);
+  static const Color gradientStart = Color(0xFF0F172A);
+  static const Color gradientEnd = Color(0xFF1E293B);
   static const Color background = Color(0xFF0A0E21);
   static const Color surface = Color(0xFF1D1E33);
   static const Color cardColor = Color(0xFF252742);

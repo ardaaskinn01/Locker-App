@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import 'onboarding_provider.dart';
 
@@ -12,7 +12,7 @@ class LanguageSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedLang = ref.watch(onboardingProvider).appLanguage;
-    final l10n = AppLocalizations.of(context)!;
+    final translations = ref.watch(translationProvider);
 
     return Scaffold(
       body: Container(
@@ -47,7 +47,7 @@ class LanguageSelectionScreen extends ConsumerWidget {
               ),
               const Spacer(),
               Text(
-                l10n.chooseLanguage,
+                translations.get('chooseLanguage'),
                 style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 32),
@@ -89,7 +89,7 @@ class LanguageSelectionScreen extends ConsumerWidget {
                         foregroundColor: AppColors.primaryBlue,
                         disabledBackgroundColor: Colors.white.withOpacity(0.3),
                       ),
-                      child: Text(l10n.continueText),
+                      child: Text(translations.get('continueText')),
                     ),
                     const SizedBox(height: 20),
                     _StepIndicator(currentStep: 0),
