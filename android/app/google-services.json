@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "330397935709",
+    "project_id": "lockapp-de964",
+    "storage_bucket": "lockapp-de964.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330397935709:android:7128ff2b87037019ef05b4",
+        "android_client_info": {
+          "package_name": "com.aasoft.lockapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjH8P5pZ-P8d5eF2_V9G1UeyQy3Yn_-hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

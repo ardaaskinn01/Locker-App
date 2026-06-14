@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">LockApp requires accessibility service to monitor app usage and prevent doomscrolling when limit is reached.</string>
+</resources>
