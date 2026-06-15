@@ -24,13 +24,27 @@ class AppLockService {
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         #if canImport(FamilyControls)
         Task { @MainActor in
-            do {
-                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                print("Family Controls Authorization Granted")
-                completion(true)
-            } catch {
-                print("Failed to authorize Family Controls: \(error)")
-                completion(false)
+            if #available(iOS 16.0, *) {
+                do {
+                    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                    print("Family Controls Authorization Granted")
+                    completion(true)
+                } catch {
+                    print("Failed to authorize Family Controls: \(error)")
+                    completion(false)
+                }
+            } else {
+                // Fallback for iOS 15.0 (completion handler version)
+                AuthorizationCenter.shared.requestAuthorization { result in
+                    switch result {
+                    case .success:
+                        print("Family Controls Authorization Granted (iOS 15)")
+                        completion(true)
+                    case .failure(let error):
+                        print("Failed to authorize Family Controls (iOS 15): \(error)")
+                        completion(false)
+                    }
+                }
             }
         }
         #else
