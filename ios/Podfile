@@ -54,26 +54,29 @@ post_install do |installer|
       end
     end
 
-    # FIX: Patch gRPC-Core's basic_seq.h template issue for Xcode 16 compatibility
-    if target.name == 'gRPC-Core'
-      target.build_configurations.each do |config|
-        grpc_file_path = File.join(File.dirname(__FILE__), "Pods/gRPC-Core/src/core/lib/promise/detail/basic_seq.h")
-        if File.exist?(grpc_file_path)
-          file_content = File.read(grpc_file_path)
-          problematic_line = 'Traits::template CallSeqFactory(f_, *cur_, std::move(arg));'
-          correct_line = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg));'
-          if file_content.include?(problematic_line)
-            puts "Patching gRPC-Core basic_seq.h for Xcode 16 compliance..."
-            file_content.gsub!(problematic_line, correct_line)
-            File.open(grpc_file_path, "w") { |file| file.puts file_content }
-          end
-        end
-      end
-    end
-
     # Ensure all targets have the correct minimum iOS deployment target
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
+  end
+
+  # FIX: Patch gRPC-Core's basic_seq.h template issue for Xcode 16 compatibility
+  # Using sandbox root for absolute reliability
+  grpc_file_path = File.join(installer.sandbox.root, "gRPC-Core/src/core/lib/promise/detail/basic_seq.h")
+  if File.exist?(grpc_file_path)
+    puts "gRPC-Core basic_seq.h found. Checking for template issue..."
+    file_content = File.read(grpc_file_path)
+    problematic_line = 'Traits::template CallSeqFactory(f_, *cur_, std::move(arg))'
+    correct_line = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
+    if file_content.include?(problematic_line)
+      puts "Patching gRPC-Core basic_seq.h for Xcode 16 compliance..."
+      file_content.gsub!(problematic_line, correct_line)
+      File.open(grpc_file_path, "w") { |file| file.puts file_content }
+      puts "gRPC-Core basic_seq.h patched successfully."
+    else
+      puts "gRPC-Core basic_seq.h already patched or clean."
+    end
+  else
+    puts "Warning: gRPC-Core basic_seq.h not found at #{grpc_file_path}."
   end
 end
