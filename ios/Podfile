@@ -85,4 +85,23 @@ post_install do |installer|
       end
     end
   end
+
+  # FIX: Allow non-modular includes in framework modules for the Runner target and project-level configs in the main project
+  main_project_path = File.join(File.dirname(__FILE__), 'Runner.xcodeproj')
+  if File.exist?(main_project_path)
+    require 'xcodeproj'
+    puts "Main project found at #{main_project_path}. Updating build settings..."
+    project = Xcodeproj::Project.open(main_project_path)
+    project.build_configurations.each do |config|
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    end
+    project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
+    project.save
+    puts "Main project build settings updated successfully."
+  end
 end
+
