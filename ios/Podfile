@@ -60,23 +60,22 @@ post_install do |installer|
     end
   end
 
-  # FIX: Patch gRPC-Core's basic_seq.h template issue for Xcode 16 compatibility
-  # Using sandbox root for absolute reliability
-  grpc_file_path = File.join(installer.sandbox.root, "gRPC-Core/src/core/lib/promise/detail/basic_seq.h")
-  if File.exist?(grpc_file_path)
-    puts "gRPC-Core basic_seq.h found. Checking for template issue..."
-    file_content = File.read(grpc_file_path)
-    problematic_line = 'Traits::template CallSeqFactory(f_, *cur_, std::move(arg))'
-    correct_line = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
-    if file_content.include?(problematic_line)
-      puts "Patching gRPC-Core basic_seq.h for Xcode 16 compliance..."
-      file_content.gsub!(problematic_line, correct_line)
-      File.open(grpc_file_path, "w") { |file| file.puts file_content }
-      puts "gRPC-Core basic_seq.h patched successfully."
-    else
-      puts "gRPC-Core basic_seq.h already patched or clean."
+  # FIX: Patch gRPC-Core & gRPC-C++ basic_seq.h template issue for Xcode 16 compatibility
+  # Using wildcard search to cover all gRPC pods (like gRPC-Core and gRPC-C++)
+  Dir.glob(File.join(installer.sandbox.root, '**/basic_seq.h')).each do |grpc_file_path|
+    if File.exist?(grpc_file_path)
+      puts "gRPC file found at #{grpc_file_path}. Checking for template issue..."
+      file_content = File.read(grpc_file_path)
+      problematic_line = 'Traits::template CallSeqFactory(f_, *cur_, std::move(arg))'
+      correct_line = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
+      if file_content.include?(problematic_line)
+        puts "Patching gRPC file for Xcode 16 compliance: #{grpc_file_path}"
+        file_content.gsub!(problematic_line, correct_line)
+        File.open(grpc_file_path, "w") { |file| file.puts file_content }
+        puts "gRPC file patched successfully."
+      else
+        puts "gRPC file already patched or clean."
+      end
     end
-  else
-    puts "Warning: gRPC-Core basic_seq.h not found at #{grpc_file_path}."
   end
 end
