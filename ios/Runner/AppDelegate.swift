@@ -1,6 +1,9 @@
 import Flutter
 import UIKit
+
+#if canImport(FamilyControls)
 import FamilyControls
+#endif
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -17,9 +20,13 @@ import FamilyControls
         if #available(iOS 15.0, *) {
             switch call.method {
             case "requestScreenTimePermission":
+                #if canImport(FamilyControls)
                 AppLockService.shared.requestAuthorization { granted in
                     result(granted)
                 }
+                #else
+                result(false)
+                #endif
                 
             case "checkUsageAccess":
                 // iOS uses Screen Time API, not usage stats. Check authorization status.
