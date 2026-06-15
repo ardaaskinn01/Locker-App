@@ -57,20 +57,24 @@ post_install do |installer|
     # Ensure all targets have the correct minimum iOS deployment target
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      
+      # FIX: Xcode 16 compatibility compiler flag for CWG 96 (missing template argument list after template keyword)
+      # This prevents compilation failure by suppressing the strict compiler check.
+      config.build_settings['OTHER_CPLUSPLUSFLAGS'] ||= ['$(inherited)']
+      config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-missing-template-arg-list-after-template-kw'
     end
   end
 
   # FIX: Patch gRPC-Core & gRPC-C++ basic_seq.h template issue for Xcode 16 compatibility
   # Using wildcard search to cover all gRPC pods (like gRPC-Core and gRPC-C++)
-  Dir.glob(File.join(installer.sandbox.root, '**/basic_seq.h')).each do |grpc_file_path|
+  Dir.glob(File.join(installer.sandbox.root.to_s, '**/basic_seq.h')).each do |grpc_file_path|
     if File.exist?(grpc_file_path)
       puts "gRPC file found at #{grpc_file_path}. Checking for template issue..."
       file_content = File.read(grpc_file_path)
-      problematic_line = 'Traits::template CallSeqFactory(f_, *cur_, std::move(arg))'
-      correct_line = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
-      if file_content.include?(problematic_line)
+      # Use negative lookahead to robustly replace the line if not already patched
+      if file_content.match?(/Traits::template CallSeqFactory(?!<>)/)
         puts "Patching gRPC file for Xcode 16 compliance: #{grpc_file_path}"
-        file_content.gsub!(problematic_line, correct_line)
+        file_content.gsub!(/Traits::template CallSeqFactory(?!<>)/, 'Traits::template CallSeqFactory<>')
         File.open(grpc_file_path, "w") { |file| file.puts file_content }
         puts "gRPC file patched successfully."
       else
