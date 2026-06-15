@@ -23,16 +23,14 @@ class AppLockService {
     // Request Authorization for Family Controls (Screen Time API)
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         #if canImport(FamilyControls)
-        Task {
+        Task { @MainActor in
             do {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                DispatchQueue.main.async {
-                    print("Family Controls Authorization Granted")
-                    completion(true)
-                }
+                print("Family Controls Authorization Granted")
+                completion(true)
             } catch {
                 print("Failed to authorize Family Controls: \(error)")
-                DispatchQueue.main.async { completion(false) }
+                completion(false)
             }
         }
         #else

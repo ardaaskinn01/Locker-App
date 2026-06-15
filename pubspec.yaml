@@ -45,7 +45,7 @@ dependencies:
   # Native Communication & Services
   permission_handler: ^11.3.0
   google_mobile_ads: ^6.0.0
-  flutter_local_notifications: ^20.1.0
+  flutter_local_notifications: ^17.2.4
   workmanager: ^0.6.0
   timezone: ^0.10.1
   connectivity_plus: any

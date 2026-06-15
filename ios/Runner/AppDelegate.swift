@@ -30,22 +30,30 @@ import FamilyControls
                 
             case "checkUsageAccess":
                 // iOS uses Screen Time API, not usage stats. Check authorization status.
+                #if canImport(FamilyControls)
                 if #available(iOS 16.0, *) {
                     let status = AuthorizationCenter.shared.authorizationStatus
                     result(status == .approved)
                 } else {
                     result(false)
                 }
+                #else
+                result(false)
+                #endif
                 
             case "checkAccessibilityAccess":
                 // iOS does not have Android-style accessibility service for app locking.
                 // Screen Time is the iOS equivalent. Return based on auth status.
+                #if canImport(FamilyControls)
                 if #available(iOS 16.0, *) {
                     let status = AuthorizationCenter.shared.authorizationStatus
                     result(status == .approved)
                 } else {
                     result(false)
                 }
+                #else
+                result(false)
+                #endif
                 
             case "openUsageStatsSettings", "openAccessibilitySettings":
                 // On iOS, open the Settings app for Screen Time
