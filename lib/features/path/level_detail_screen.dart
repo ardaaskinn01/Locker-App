@@ -97,28 +97,38 @@ class _LevelDetailScreenState extends ConsumerState<LevelDetailScreen>
               // Tab Content
               Expanded(
                 child: exercisesAsync.when(
-                  data: (firebaseExercises) {
+                  data: (_) {
                     return TabBarView(
                       controller: _tabController,
                       children: List.generate(3, (tabIndex) {
                         final tab = _tabs[tabIndex];
-                        final track = _buildTrack(firebaseExercises, tab.type);
-                        return _TrackPathView(
-                          exercises: track,
-                          accentColor: tab.color,
+                        return Consumer(
+                          builder: (context, ref, child) {
+                            final track = ref.watch(mergedExerciseTrackProvider((level: widget.level, type: tab.type)));
+                            return _TrackPathView(
+                              exercises: track,
+                              accentColor: tab.color,
+                            );
+                          },
                         );
                       }),
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
                   error: (e, __) {
-                    // Fallback: show local placeholders even on error
                     return TabBarView(
                       controller: _tabController,
                       children: List.generate(3, (tabIndex) {
                         final tab = _tabs[tabIndex];
-                        final track = _buildTrack([], tab.type);
-                        return _TrackPathView(exercises: track, accentColor: tab.color);
+                        return Consumer(
+                          builder: (context, ref, child) {
+                            final track = ref.watch(mergedExerciseTrackProvider((level: widget.level, type: tab.type)));
+                            return _TrackPathView(
+                              exercises: track,
+                              accentColor: tab.color,
+                            );
+                          },
+                        );
                       }),
                     );
                   },
@@ -129,41 +139,6 @@ class _LevelDetailScreenState extends ConsumerState<LevelDetailScreen>
         ),
       ),
     );
-  }
-
-  /// Merge Firebase exercises with local placeholders to always show 60 items.
-  List<ExerciseModel> _buildTrack(List<ExerciseModel> firebaseAll, ExerciseType type) {
-    final lang = 'en'; // Could come from user provider
-    final level = widget.level;
-
-    // Filter Firebase exercises of this type
-    final fromFirebase = firebaseAll.where((e) => e.type == type).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
-
-    // Build 60-item placeholder list
-    List<ExerciseModel> placeholders;
-    switch (type) {
-      case ExerciseType.matching:
-        placeholders = SeedData.matchingTrack(language: lang, level: level);
-        break;
-      case ExerciseType.quiz:
-        placeholders = SeedData.quizTrack(language: lang, level: level);
-        break;
-      case ExerciseType.sentenceBuilder:
-        placeholders = SeedData.sentenceTrack(language: lang, level: level);
-        break;
-      default:
-        placeholders = SeedData.matchingTrack(language: lang, level: level);
-    }
-
-    // Overlay Firebase data: replace placeholder with real data by order
-    final Map<int, ExerciseModel> byOrder = {for (var e in placeholders) e.order: e};
-    for (final fb in fromFirebase) {
-      byOrder[fb.order] = fb;
-    }
-
-    final merged = byOrder.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    return merged.map((e) => e.value).toList();
   }
 }
 

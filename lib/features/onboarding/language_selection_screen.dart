@@ -166,7 +166,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
+      children: List.generate(7, (index) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: 8,

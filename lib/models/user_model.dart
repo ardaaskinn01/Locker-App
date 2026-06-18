@@ -25,6 +25,9 @@ class UserModel {
   final int longestStreak;
   final Timestamp? lastActiveDate;
   final int bonusMinutes;
+  final Map<String, dynamic>? activeChallenge;
+  final Map<String, dynamic>? lastChallengeResult;
+  final String? lastMiniGameDate;
 
   UserModel({
     required this.uid,
@@ -50,6 +53,9 @@ class UserModel {
     this.longestStreak = 0,
     this.lastActiveDate,
     this.bonusMinutes = 0,
+    this.activeChallenge,
+    this.lastChallengeResult,
+    this.lastMiniGameDate,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -78,6 +84,9 @@ class UserModel {
       longestStreak: data['longestStreak'] ?? 0,
       lastActiveDate: data['lastActiveDate'],
       bonusMinutes: data['bonusMinutes'] ?? 0,
+      activeChallenge: data['activeChallenge'] != null ? Map<String, dynamic>.from(data['activeChallenge']) : null,
+      lastChallengeResult: data['lastChallengeResult'] != null ? Map<String, dynamic>.from(data['lastChallengeResult']) : null,
+      lastMiniGameDate: data['lastMiniGameDate'],
     );
   }
 
@@ -105,6 +114,9 @@ class UserModel {
       'longestStreak': longestStreak,
       'lastActiveDate': lastActiveDate,
       'bonusMinutes': bonusMinutes,
+      'activeChallenge': activeChallenge,
+      'lastChallengeResult': lastChallengeResult,
+      'lastMiniGameDate': lastMiniGameDate,
     };
   }
 
@@ -130,6 +142,9 @@ class UserModel {
     int? longestStreak,
     Timestamp? lastActiveDate,
     int? bonusMinutes,
+    Map<String, dynamic>? activeChallenge,
+    Map<String, dynamic>? lastChallengeResult,
+    String? lastMiniGameDate,
   }) {
     return UserModel(
       uid: uid,
@@ -155,6 +170,9 @@ class UserModel {
       longestStreak: longestStreak ?? this.longestStreak,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       bonusMinutes: bonusMinutes ?? this.bonusMinutes,
+      activeChallenge: activeChallenge ?? this.activeChallenge,
+      lastChallengeResult: lastChallengeResult ?? this.lastChallengeResult,
+      lastMiniGameDate: lastMiniGameDate ?? this.lastMiniGameDate,
     );
   }
 }

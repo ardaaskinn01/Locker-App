@@ -6,6 +6,7 @@ import '../../core/services/ad_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../models/exercise_model.dart';
 import 'matching_provider.dart';
+import '../path/path_providers.dart';
 
 class MatchingScreen extends ConsumerStatefulWidget {
   final ExerciseModel exercise;
@@ -185,6 +186,11 @@ class _ResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final track = ref.watch(mergedExerciseTrackProvider((level: exercise.level, type: exercise.type)));
+    final currentIndex = track.indexWhere((e) => e.id == exercise.id);
+    final nextExercise = (currentIndex != -1 && currentIndex < track.length - 1) ? track[currentIndex + 1] : null;
+    final hasNext = nextExercise != null && nextExercise.content.isNotEmpty;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -196,7 +202,7 @@ class _ResultScreen extends ConsumerWidget {
             const Icon(Icons.stars_rounded, color: AppColors.accentGold, size: 100),
             const SizedBox(height: 24),
             const Text(
-              'Tebrikler! 🎉',
+              'Tebrikler!',
               style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -219,7 +225,7 @@ class _ResultScreen extends ConsumerWidget {
                   Text('🪙', style: TextStyle(fontSize: 20)),
                   SizedBox(width: 8),
                   Text(
-                    '+100 Jeton Kazandın!',
+                    '+20 Jeton Kazandın!',
                     style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ],
@@ -228,39 +234,67 @@ class _ResultScreen extends ConsumerWidget {
 
             const SizedBox(height: 80),
 
+
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final uid = ref.read(firebaseServiceProvider).currentUserId;
-                    if (uid != null) {
-                      await ref.read(firebaseServiceProvider).completeExercise(
-                        uid,
-                        exercise.id,
-                        type: exercise.type.name,
-                        level: exercise.level,
-                        language: exercise.language,
-                        score: total,
-                        jetonReward: 100,
-                      );
-                    }
-                    
-                    ref.read(adServiceProvider).showInterstitial(
-                      onComplete: () {
-                        if (context.mounted) context.pop();
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final uid = ref.read(firebaseServiceProvider).currentUserId;
+                        if (uid != null) {
+                          await ref.read(firebaseServiceProvider).completeExercise(
+                            uid,
+                            exercise.id,
+                            type: exercise.type.name,
+                            level: exercise.level,
+                            language: exercise.language,
+                            score: total,
+                            jetonReward: 20,
+                          );
+                        }
+                        
+                        ref.read(adServiceProvider).showInterstitial(
+                          onComplete: () {
+                            if (context.mounted) {
+                              if (hasNext) {
+                                context.pushReplacement('/exercise/${nextExercise.id}');
+                              } else {
+                                context.pop();
+                              }
+                            }
+                          },
+                        );
                       },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primaryBlue,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text(
+                        hasNext ? 'SONRAKİ EGZERSİZ' : 'YOL\'A DÖN',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
                   ),
-                  child: const Text('YOL\'A DÖN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
+                  if (hasNext) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(adServiceProvider).showInterstitial(
+                          onComplete: () {
+                            if (context.mounted) context.pop();
+                          },
+                        );
+                      },
+                      child: const Text('YOL\'A DÖN', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

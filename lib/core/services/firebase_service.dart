@@ -140,7 +140,7 @@ class FirebaseService {
     required String level,
     required String language,
     required int score,
-    int jetonReward = 100,
+    int jetonReward = 50,
   }) async {
     final docRef = _firestore.collection('users').doc(uid);
     bool levelUnlocked = false;
@@ -202,6 +202,65 @@ class FirebaseService {
     return levelUnlocked;
   }
 
+  Future<void> startDailyChallenge(String uid, int betAmount) async {
+    final docRef = _firestore.collection('users').doc(uid);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+
+      final data = snap.data()!;
+      final int currentJetons = data['jetons'] ?? 0;
+
+      if (currentJetons < betAmount) {
+        throw Exception('Meydan okumaya girmek için yetersiz jeton!');
+      }
+
+      final now = DateTime.now();
+      final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      tx.update(docRef, {
+        'jetons': currentJetons - betAmount,
+        'activeChallenge': {
+          'betAmount': betAmount,
+          'exceededLimit': false,
+          'date': dateStr,
+        }
+      });
+    });
+  }
+
+  Future<void> claimChallengeReward(String uid) async {
+    final docRef = _firestore.collection('users').doc(uid);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+
+      final data = snap.data()!;
+      final lastResult = data['lastChallengeResult'] as Map<dynamic, dynamic>?;
+
+      if (lastResult == null) return;
+
+      final int betAmount = lastResult['betAmount'] ?? 0;
+      final bool wasSuccess = lastResult['wasSuccess'] ?? false;
+      final int currentJetons = data['jetons'] ?? 0;
+      final int totalJetons = data['totalJetonsEarned'] ?? 0;
+
+      final int reward = wasSuccess ? betAmount * 2 : 0;
+
+      tx.update(docRef, {
+        'lastChallengeResult': FieldValue.delete(),
+        if (reward > 0) 'jetons': currentJetons + reward,
+        if (reward > 0) 'totalJetonsEarned': totalJetons + reward,
+      });
+    });
+  }
+
+  Future<void> dismissChallengeResult(String uid) async {
+    await _firestore.collection('users').doc(uid).update({
+      'lastChallengeResult': FieldValue.delete(),
+    });
+  }
+
   Future<void> buyBonusTime(String uid) async {
     final docRef = _firestore.collection('users').doc(uid);
     await _firestore.runTransaction((tx) async {
@@ -222,6 +281,27 @@ class FirebaseService {
       });
     });
     // Log spending if possible (optional based on analytics service)
+  }
+
+  Future<void> completeDailyMiniGame(String uid, int rewardAmount) async {
+    final docRef = _firestore.collection('users').doc(uid);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+
+      final data = snap.data()!;
+      final int currentJetons = data['jetons'] ?? 0;
+      final int totalJetons = data['totalJetonsEarned'] ?? 0;
+
+      final now = DateTime.now();
+      final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      tx.update(docRef, {
+        'jetons': currentJetons + rewardAmount,
+        'totalJetonsEarned': totalJetons + rewardAmount,
+        'lastMiniGameDate': dateStr,
+      });
+    });
   }
 
   String? get currentUserId => _auth.currentUser?.uid;

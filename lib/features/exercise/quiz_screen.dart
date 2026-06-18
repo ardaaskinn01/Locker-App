@@ -6,6 +6,7 @@ import '../../core/services/ad_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../models/exercise_model.dart';
 import 'quiz_provider.dart';
+import '../path/path_providers.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   final ExerciseModel exercise;
@@ -282,8 +283,12 @@ class _ResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isSuccess = correctCount >= (totalCount * 0.8);
-    final jetons = isSuccess ? 100 : 0;
+    final jetons = isSuccess ? 20 : 0;
     final scorePercentage = correctCount / totalCount;
+    final track = ref.watch(mergedExerciseTrackProvider((level: exercise.level, type: exercise.type)));
+    final currentIndex = track.indexWhere((e) => e.id == exercise.id);
+    final nextExercise = (currentIndex != -1 && currentIndex < track.length - 1) ? track[currentIndex + 1] : null;
+    final hasNext = nextExercise != null && nextExercise.content.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -317,7 +322,7 @@ class _ResultScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 48),
             Text(
-              isSuccess ? 'Harika İş! 🎉' : 'Daha Çok Çalışmalısın! 💪',
+              isSuccess ? 'Tebrikler!' : 'Tekrar Denemelisin',
               style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -345,39 +350,67 @@ class _ResultScreen extends ConsumerWidget {
 
             const SizedBox(height: 80),
 
+
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final uid = ref.read(firebaseServiceProvider).currentUserId;
-                    if (uid != null && isSuccess) {
-                      await ref.read(firebaseServiceProvider).completeExercise(
-                        uid,
-                        exercise.id,
-                        type: exercise.type.name,
-                        level: exercise.level,
-                        language: exercise.language,
-                        score: correctCount,
-                        jetonReward: jetons,
-                      );
-                    }
-                    
-                    ref.read(adServiceProvider).showInterstitial(
-                      onComplete: () {
-                        if (context.mounted) context.pop();
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final uid = ref.read(firebaseServiceProvider).currentUserId;
+                        if (uid != null && isSuccess) {
+                          await ref.read(firebaseServiceProvider).completeExercise(
+                            uid,
+                            exercise.id,
+                            type: exercise.type.name,
+                            level: exercise.level,
+                            language: exercise.language,
+                            score: correctCount,
+                            jetonReward: jetons,
+                          );
+                        }
+                        
+                        ref.read(adServiceProvider).showInterstitial(
+                          onComplete: () {
+                            if (context.mounted) {
+                              if (hasNext && isSuccess) {
+                                context.pushReplacement('/exercise/${nextExercise.id}');
+                              } else {
+                                context.pop();
+                              }
+                            }
+                          },
+                        );
                       },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primaryBlue,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text(
+                        (hasNext && isSuccess) ? 'SONRAKİ EGZERSİZ' : 'YOL\'A DÖN',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
                   ),
-                  child: const Text('YOL\'A DÖN', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                  if (hasNext && isSuccess) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(adServiceProvider).showInterstitial(
+                          onComplete: () {
+                            if (context.mounted) context.pop();
+                          },
+                        );
+                      },
+                      child: const Text('YOL\'A DÖN', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ],
               ),
             ),
 

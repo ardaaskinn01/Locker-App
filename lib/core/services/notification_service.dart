@@ -132,6 +132,54 @@ class NotificationService {
     );
   }
 
+  Future<void> scheduleInactiveReminder(int resetHour) async {
+    await _flutterLocalNotificationsPlugin.cancel(400); // 400 is ID for inactive reminder
+    
+    // Schedule inactive reminder at 15 hours after resetHour (e.g. 4 AM -> 7 PM)
+    final reminderHour = (resetHour + 15) % 24;
+    
+    var now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, reminderHour);
+    
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'inactive_reminder_channel', 'App Inactivity Reminder',
+      channelDescription: 'Reminds you to earn jetons when you haven\'t opened the app',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+    const NotificationDetails platformDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    try {
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        400,
+        'Haydi! Jeton Kazan 🪙',
+        'Ekran süresi satın almak için jetonlarını biriktirmeyi unutma!',
+        scheduledDate,
+        platformDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      // If exact alarm permission is missing, fallback to inexact
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        400,
+        'Haydi! Jeton Kazan 🪙',
+        'Ekran süresi satın almak için jetonlarını biriktirmeyi unutma!',
+        scheduledDate,
+        platformDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
+  }
+
   Future<void> cancelAllNotifications() async {
     await _flutterLocalNotificationsPlugin.cancelAll();
   }
@@ -146,5 +194,6 @@ final notificationSyncProvider = Provider((ref) {
   
   if (user != null) {
     service.scheduleResetReminder(user.resetHour);
+    service.scheduleInactiveReminder(user.resetHour);
   }
 });

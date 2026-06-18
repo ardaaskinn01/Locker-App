@@ -158,7 +158,7 @@ class _LimitSettingScreenState extends ConsumerState<LimitSettingScreen> {
                       child: Text(translations.get('continueText')),
                     ),
                     const SizedBox(height: 20),
-                    _StepIndicator(currentStep: 3),
+                    _StepIndicator(currentStep: 5),
                   ],
                 ),
               ),
@@ -252,7 +252,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
+      children: List.generate(7, (index) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: index == currentStep ? 12 : 8,

@@ -116,11 +116,17 @@ class AppLockService {
       final bool isLimitReached = totalUsage >= totalAllowedMinutes;
       await _lockChannel.invokeMethod('setLimitStatus', {'isLimitReached': isLimitReached});
 
-      // Update Firestore with the current usage report
-      await _firestore.collection('users').doc(uid).update({
+      final Map<String, dynamic> updates = {
         'todaysUsageDetails': appUsageMap,
         'todaysTotalUsageMinutes': totalUsage,
-      });
+      };
+
+      if (isLimitReached && data['activeChallenge'] != null) {
+        updates['activeChallenge.exceededLimit'] = true;
+      }
+
+      // Update Firestore with the current usage report
+      await _firestore.collection('users').doc(uid).update(updates);
 
     } catch (e) {
       print('SyncLimitStatus error: $e');

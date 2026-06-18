@@ -131,7 +131,7 @@ class AdService {
       );
 
       await _rewardedAd!.show(onUserEarnedReward: (ad, reward) async {
-        await firebaseService.awardJetons(user.uid, 65, source: 'rewarded_ad');
+        await firebaseService.awardJetons(user.uid, 50, source: 'rewarded_ad');
         await firebaseService.updateUserField(user.uid, 'dailyRewardedAdCount', user.dailyRewardedAdCount + 1);
         onRewarded();
       });

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -15,13 +14,13 @@ import 'core/theme/app_theme.dart';
 import 'features/onboarding/onboarding_provider.dart';
 import 'features/onboarding/language_selection_screen.dart';
 import 'features/onboarding/user_info_screen.dart';
+import 'features/onboarding/referral_screen.dart';
 import 'features/onboarding/avg_usage_screen.dart';
 import 'features/onboarding/select_apps_screen.dart';
 import 'features/onboarding/limit_setting_screen.dart';
 import 'features/onboarding/target_language_screen.dart';
 
 import 'features/home/home_screen.dart';
-import 'features/home/home_providers.dart';
 import 'features/path/path_screen.dart';
 import 'features/path/level_detail_screen.dart';
 import 'features/exercise/quiz_screen.dart';
@@ -29,16 +28,13 @@ import 'features/exercise/sentence_builder_screen.dart';
 import 'features/exercise/matching_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'models/exercise_model.dart';
-import 'core/services/firebase_service.dart';
 import 'core/services/jeton_reset_service.dart';
 import 'core/services/app_lock_service.dart';
 import 'core/services/ad_service.dart';
 import 'core/services/notification_service.dart';
-import 'core/services/seed_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'widgets/banner_ad_widget.dart';
 import 'widgets/loading_error_widgets.dart';
-import 'core/constants/app_colors.dart';
 import 'core/services/usage_sync_manager.dart';
 import 'core/localization/translations.dart';
 
@@ -107,7 +103,7 @@ class MyApp extends ConsumerWidget {
       });
     }
 
-    final language = ref.watch(languageProvider);
+    ref.watch(languageProvider);
     ref.watch(notificationSyncProvider);
 
     ref.listen<AsyncValue<bool>>(connectivityStreamProvider, (previous, next) {
@@ -127,10 +123,15 @@ class MyApp extends ConsumerWidget {
           builder: (context, state, child) {
             String screenName = 'home';
             final loc = state.matchedLocation;
-            if (loc.contains('onboarding')) screenName = 'onboarding';
-            else if (loc.contains('path')) screenName = 'path';
-            else if (loc.contains('exercise')) screenName = 'exercise';
-            else if (loc.contains('settings')) screenName = 'settings';
+            if (loc.contains('onboarding')) {
+              screenName = 'onboarding';
+            } else if (loc.contains('path')) {
+              screenName = 'path';
+            } else if (loc.contains('exercise')) {
+              screenName = 'exercise';
+            } else if (loc.contains('settings')) {
+              screenName = 'settings';
+            }
 
             final bool showNavBar = !loc.contains('onboarding') && !loc.contains('exercise');
             final int currentIndex = _calculateSelectedIndex(loc);
@@ -187,6 +188,7 @@ class MyApp extends ConsumerWidget {
               builder: (context, state) => const LanguageSelectionScreen(),
               routes: [
                 GoRoute(path: 'user-info', builder: (context, state) => const UserInfoScreen()),
+                GoRoute(path: 'referral', builder: (context, state) => const ReferralScreen()),
                 GoRoute(path: 'avg-usage', builder: (context, state) => const AvgUsageScreen()),
                 GoRoute(path: 'select-apps', builder: (context, state) => const SelectAppsScreen()),
                 GoRoute(path: 'limit', builder: (context, state) => const LimitSettingScreen()),

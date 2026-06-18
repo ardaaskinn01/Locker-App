@@ -147,7 +147,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                           child: Text(translations.get('letsStart')),
                         ),
                         const SizedBox(height: 20),
-                        _StepIndicator(currentStep: 4),
+                        _StepIndicator(currentStep: 6),
                       ],
                     ),
                   ),
@@ -327,7 +327,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
+      children: List.generate(7, (index) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: index == currentStep ? 12 : 8,

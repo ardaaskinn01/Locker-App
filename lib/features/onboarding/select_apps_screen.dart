@@ -139,7 +139,7 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                     ),
                     const SizedBox(height: 24),
                     if (GoRouterState.of(context).matchedLocation.contains('onboarding'))
-                      _StepIndicator(currentStep: 3),
+                      _StepIndicator(currentStep: 4),
                   ],
                 ),
               ),
@@ -429,7 +429,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
+      children: List.generate(7, (index) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 4),

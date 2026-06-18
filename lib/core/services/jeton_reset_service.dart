@@ -33,6 +33,21 @@ class JetonResetService {
           updates['pendingResetHour'] = FieldValue.delete();
         }
 
+        // Eşleşen günlük meydan okuma varsa değerlendir
+        final activeChallenge = data['activeChallenge'] as Map<dynamic, dynamic>?;
+        if (activeChallenge != null) {
+          final int betAmount = activeChallenge['betAmount'] ?? 0;
+          final bool exceededLimit = activeChallenge['exceededLimit'] ?? false;
+          final bool wasSuccess = !exceededLimit;
+
+          updates['lastChallengeResult'] = {
+            'betAmount': betAmount,
+            'wasSuccess': wasSuccess,
+            'claimed': false,
+          };
+          updates['activeChallenge'] = FieldValue.delete();
+        }
+
         batch.update(docRef, updates);
         await batch.commit();
         print('JetonResetService: Reset completed for $uid');
