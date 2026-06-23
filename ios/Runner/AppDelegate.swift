@@ -85,10 +85,10 @@ struct AppPickerView: View {
                 result(false)
                 #endif
                 
-            case "openUsageStatsSettings", "openAccessibilitySettings":
-                // On iOS, open the Settings app for Screen Time
+            case "openUsageStatsSettings", "openAccessibilitySettings", "openAppSettings":
+                // On iOS, open the Settings app for Screen Time / Permissions
                 if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 }
                 result(nil)
                 

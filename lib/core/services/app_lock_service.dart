@@ -47,15 +47,12 @@ class AppLockService {
   }
 
   Future<bool> openAppSettings() async {
-    if (Platform.isAndroid) {
-      try {
-        await _lockChannel.invokeMethod('openAppSettings');
-        return true;
-      } catch (e) {
-        return false;
-      }
+    try {
+      await _lockChannel.invokeMethod('openAppSettings');
+      return true;
+    } catch (e) {
+      return false;
     }
-    return true;
   }
 
   Future<bool> requestNotificationPermission() async {

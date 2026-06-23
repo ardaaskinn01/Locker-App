@@ -253,7 +253,12 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                           isGranted: _screenTimeGranted,
                           onAction: () async {
                             final granted = await appLockServiceProvider.requestScreenTimePermission();
-                            setState(() => _screenTimeGranted = granted);
+                            if (mounted) {
+                              setState(() => _screenTimeGranted = granted);
+                              if (!granted) {
+                                await appLockServiceProvider.openAppSettings();
+                              }
+                            }
                           },
                           translations: translations,
                         ),
