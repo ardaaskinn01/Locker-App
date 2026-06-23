@@ -6,33 +6,30 @@ import '../../models/user_model.dart';
 
 /// Firestore'daki kullanıcı belgesini gerçek zamanlı (Stream) takip eden sağlayıcı.
 /// FirebaseAuth oturumu yoksa otomatik anonim giriş yapılır.
-final userProvider = StreamProvider<UserModel?>((ref) async* {
+final userProvider = StreamProvider<UserModel?>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
-  String? uid = firebaseService.currentUserId;
 
-  if (uid == null) {
-    // FirebaseAuth oturumu yoksa yeniden anonim giriş yap
-    final prefs = await SharedPreferences.getInstance();
-    final onboarded = prefs.getBool('onboardingCompleted') ?? false;
-    if (!onboarded) {
-      yield null;
-      return;
+  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+    if (user == null) {
+      // If no user is logged in, try to sign in anonymously if onboarding is completed
+      return Stream.fromFuture(SharedPreferences.getInstance().then((prefs) async {
+        final onboarded = prefs.getBool('onboardingCompleted') ?? false;
+        if (onboarded) {
+          try {
+            final cred = await FirebaseAuth.instance.signInAnonymously();
+            if (cred.user != null) {
+              // This sign in will trigger authStateChanges again and return the correct stream
+              return const Stream<UserModel?>.empty();
+            }
+          } catch (_) {}
+        }
+        return Stream<UserModel?>.value(null);
+      })).asyncExpand((s) => s);
     }
-    try {
-      final cred = await FirebaseAuth.instance.signInAnonymously();
-      uid = cred.user?.uid;
-    } catch (_) {
-      yield null;
-      return;
-    }
-  }
-
-  if (uid == null) {
-    yield null;
-    return;
-  }
-
-  yield* firebaseService.getUserStream(uid);
+    
+    // User is logged in, yield the user document stream
+    return firebaseService.getUserStream(user.uid);
+  });
 });
 
 /// Sadece jeton miktarını takip etmek için özelleşmiş sağlayıcı.

@@ -101,7 +101,6 @@ class PathScreen extends ConsumerWidget {
                   error: (e, __) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
                 ),
               ),
-              const SizedBox(height: 100), // Space for floating nav bar
             ],
           ),
         ),

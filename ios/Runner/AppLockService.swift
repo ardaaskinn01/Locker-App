@@ -72,7 +72,7 @@ class AppLockService {
         if #available(iOS 16.0, *) {
             if isLimitReached {
                 store.shield.applications = selectionToShield.applicationTokens
-                store.shield.applicationCategories = selectionToShield.categoryTokens
+                store.shield.applicationCategories = .specific(selectionToShield.categoryTokens)
                 print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
             } else {
                 // Remove shields

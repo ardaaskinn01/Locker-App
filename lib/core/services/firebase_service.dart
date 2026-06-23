@@ -285,22 +285,13 @@ class FirebaseService {
 
   Future<void> completeDailyMiniGame(String uid, int rewardAmount) async {
     final docRef = _firestore.collection('users').doc(uid);
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(docRef);
-      if (!snap.exists) return;
-
-      final data = snap.data()!;
-      final int currentJetons = data['jetons'] ?? 0;
-      final int totalJetons = data['totalJetonsEarned'] ?? 0;
-
-      final now = DateTime.now();
-      final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-
-      tx.update(docRef, {
-        'jetons': currentJetons + rewardAmount,
-        'totalJetonsEarned': totalJetons + rewardAmount,
-        'lastMiniGameDate': dateStr,
-      });
+    final now = DateTime.now();
+    final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    
+    await docRef.update({
+      'jetons': FieldValue.increment(rewardAmount),
+      'totalJetonsEarned': FieldValue.increment(rewardAmount),
+      'lastMiniGameDate': dateStr,
     });
   }
 
