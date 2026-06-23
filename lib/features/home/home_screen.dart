@@ -12,6 +12,7 @@ import 'home_providers.dart';
 import '../../core/services/app_lock_service.dart';
 import '../../models/user_model.dart';
 import 'daily_mini_game_screen.dart';
+import '../../core/services/usage_sync_manager.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +29,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     // Run seed logic when home screen is first shown (session should be active)
     SeedService.seedDemoExercisesIfNeeded();
+    // Start foreground usage sync timer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(usageSyncProvider).startSync();
+    });
   }
 
   @override
@@ -312,6 +317,7 @@ class _HomeBody extends ConsumerWidget {
                   }
                   try {
                      await ref.read(firebaseServiceProvider).buyBonusTime(user.uid);
+                     await appLockServiceProvider.syncLimitStatus(user.uid);
                      if (context.mounted) {
                        ScaffoldMessenger.of(context).showSnackBar(
                          SnackBar(content: Text(translations.get('bonusAdded')), behavior: SnackBarBehavior.floating),

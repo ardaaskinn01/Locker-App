@@ -1,8 +1,38 @@
 import Flutter
 import UIKit
+import SwiftUI
 
 #if canImport(FamilyControls)
 import FamilyControls
+#endif
+
+#if canImport(SwiftUI) && canImport(FamilyControls)
+@available(iOS 16.0, *)
+struct AppPickerView: View {
+    @Binding var selection: FamilyActivitySelection
+    var onDone: () -> Void
+    var onCancel: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            FamilyActivityPicker(selection: $selection)
+                .navigationTitle("Uygulama Seçin")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("İptal") {
+                            onCancel()
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Tamam") {
+                            onDone()
+                        }
+                    }
+                }
+        }
+    }
+}
 #endif
 
 @main
@@ -73,14 +103,39 @@ import FamilyControls
                 
             case "setLockedApps":
                 // iOS uses FamilyActivityPicker tokens, not package names.
-                // The locked apps must be selected via the FamilyActivityPicker UI.
                 // This call is a no-op on iOS (managed via Screen Time shields).
                 result(nil)
                 
             case "getAppUsageToday":
                 // iOS does not allow querying per-app usage via API without DeviceActivity reports.
-                // Return 0 as a safe default; iOS usage sync is handled differently.
                 result(0)
+                
+            case "selectAppsIOS":
+                #if canImport(FamilyControls)
+                if #available(iOS 16.0, *) {
+                    DispatchQueue.main.async {
+                        let pickerVC = UIHostingController(rootView: AppPickerView(
+                            selection: Binding(
+                                get: { AppLockService.shared.selectionToShield },
+                                set: { AppLockService.shared.selectionToShield = $0 }
+                            ),
+                            onDone: {
+                                controller.dismiss(animated: true, completion: nil)
+                                result(AppLockService.shared.selectionToShield.applicationTokens.count + AppLockService.shared.selectionToShield.categoryTokens.count)
+                            },
+                            onCancel: {
+                                controller.dismiss(animated: true, completion: nil)
+                                result(0)
+                            }
+                        ))
+                        controller.present(pickerVC, animated: true, completion: nil)
+                    }
+                } else {
+                    result(0)
+                }
+                #else
+                result(0)
+                #endif
                 
             default:
                 result(FlutterMethodNotImplemented)

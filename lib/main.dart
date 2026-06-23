@@ -19,6 +19,7 @@ import 'features/onboarding/avg_usage_screen.dart';
 import 'features/onboarding/select_apps_screen.dart';
 import 'features/onboarding/limit_setting_screen.dart';
 import 'features/onboarding/target_language_screen.dart';
+import 'features/onboarding/permissions_screen.dart';
 
 import 'features/home/home_screen.dart';
 import 'features/path/path_screen.dart';
@@ -191,6 +192,7 @@ class MyApp extends ConsumerWidget {
                 GoRoute(path: 'referral', builder: (context, state) => const ReferralScreen()),
                 GoRoute(path: 'avg-usage', builder: (context, state) => const AvgUsageScreen()),
                 GoRoute(path: 'select-apps', builder: (context, state) => const SelectAppsScreen()),
+                GoRoute(path: 'permissions', builder: (context, state) => const PermissionsScreen()),
                 GoRoute(path: 'limit', builder: (context, state) => const LimitSettingScreen()),
                 GoRoute(path: 'target-lang', builder: (context, state) => const TargetLanguageScreen()),
               ],

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/localization/translations.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/firebase_service.dart';
+import '../../core/services/app_lock_service.dart';
 import 'onboarding_provider.dart';
 
 class TargetLanguageScreen extends ConsumerStatefulWidget {
@@ -147,7 +148,7 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
                           child: Text(translations.get('letsStart')),
                         ),
                         const SizedBox(height: 20),
-                        _StepIndicator(currentStep: 6),
+                        const _StepIndicator(currentStep: 7),
                       ],
                     ),
                   ),
@@ -190,6 +191,10 @@ class _TargetLanguageScreenState extends ConsumerState<TargetLanguageScreen> {
         // 2. Veritabanına kayıt
         final userData = ref.read(onboardingProvider.notifier).finalizeOnboarding();
         await firebaseService.createUserDocument(uid, userData);
+        
+        // Hemen kilit ayarlarını senkronize et
+        await appLockServiceProvider.syncLockedApps(uid);
+        await appLockServiceProvider.syncLimitStatus(uid);
         
         // 3. SharedPreferences güncelleme
         final prefs = await SharedPreferences.getInstance();
@@ -327,7 +332,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(7, (index) {
+      children: List.generate(8, (index) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: index == currentStep ? 12 : 8,

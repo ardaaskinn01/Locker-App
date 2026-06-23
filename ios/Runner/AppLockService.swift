@@ -20,6 +20,20 @@ class AppLockService {
     let store = ManagedSettingsStore()
     #endif
     
+    #if canImport(FamilyControls)
+    var selectionToShield = FamilyActivitySelection() {
+        didSet {
+            saveSelection()
+        }
+    }
+    #endif
+    
+    private let selectionKey = "LockAppSelection"
+    
+    init() {
+        loadSelection()
+    }
+    
     // Request Authorization for Family Controls (Screen Time API)
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         #if canImport(FamilyControls)
@@ -52,16 +66,44 @@ class AppLockService {
         #endif
     }
 
-    // Set shielded applications based on token strings received from Flutter
+    // Set shielded applications based on selection tokens
     func setShieldedApps(isLimitReached: Bool) {
-        #if canImport(ManagedSettings)
-        if isLimitReached {
-            print("Limit reached! Applying iOS Shield Restrictions (Mocked tokens)...")
-        } else {
-            // Remove shields
-            store.shield.applications = nil
-            store.shield.applicationCategories = nil
-            print("Shields lifted.")
+        #if canImport(ManagedSettings) && canImport(FamilyControls)
+        if #available(iOS 16.0, *) {
+            if isLimitReached {
+                store.shield.applications = selectionToShield.applicationTokens
+                store.shield.applicationCategories = selectionToShield.categoryTokens
+                print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
+            } else {
+                // Remove shields
+                store.shield.applications = nil
+                store.shield.applicationCategories = nil
+                print("Shields lifted.")
+            }
+        }
+        #endif
+    }
+    
+    func saveSelection() {
+        #if canImport(FamilyControls)
+        do {
+            let data = try JSONEncoder().encode(selectionToShield)
+            UserDefaults.standard.set(data, forKey: selectionKey)
+            print("Selection saved successfully.")
+        } catch {
+            print("Failed to save selection: \(error)")
+        }
+        #endif
+    }
+    
+    func loadSelection() {
+        #if canImport(FamilyControls)
+        guard let data = UserDefaults.standard.data(forKey: selectionKey) else { return }
+        do {
+            selectionToShield = try JSONDecoder().decode(FamilyActivitySelection.self, from: data)
+            print("Selection loaded successfully: \(selectionToShield.applicationTokens.count) apps.")
+        } catch {
+            print("Failed to load selection: \(error)")
         }
         #endif
     }

@@ -83,35 +83,37 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
               ),
 
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: _apps.length,
-                  itemBuilder: (context, index) {
-                    final app = _apps[index];
-                    final isSelected = state.selectedApps.contains(app['name']);
-                    
-                    return _AppCard(
-                      name: app['name'],
-                      logoUrl: app['logo'],
-                      isSelected: isSelected,
-                      onTap: () {
-                        List<String> currentSelected = List.from(state.selectedApps);
-                        if (isSelected) {
-                          currentSelected.remove(app['name']);
-                        } else {
-                          currentSelected.add(app['name']);
-                        }
-                        ref.read(onboardingProvider.notifier).setSelectedApps(currentSelected);
-                      },
-                    );
-                  },
-                ),
+                child: Platform.isIOS
+                    ? _buildIOSPickerCard(context, state, translations)
+                    : GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: _apps.length,
+                        itemBuilder: (context, index) {
+                          final app = _apps[index];
+                          final isSelected = state.selectedApps.contains(app['name']);
+                          
+                          return _AppCard(
+                            name: app['name'],
+                            logoUrl: app['logo'],
+                            isSelected: isSelected,
+                            onTap: () {
+                              List<String> currentSelected = List.from(state.selectedApps);
+                              if (isSelected) {
+                                currentSelected.remove(app['name']);
+                              } else {
+                                currentSelected.add(app['name']);
+                              }
+                              ref.read(onboardingProvider.notifier).setSelectedApps(currentSelected);
+                            },
+                          );
+                        },
+                      ),
               ),
 
               // Bottom Area
@@ -125,7 +127,28 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                       child: ElevatedButton(
                         onPressed: isButtonEnabled
                             ? () async {
-                                await _showPermissionDialog(context, translations);
+                                if (GoRouterState.of(context).matchedLocation.contains('onboarding')) {
+                                  context.push('/onboarding/permissions');
+                                } else {
+                                  final uid = ref.read(firebaseServiceProvider).currentUserId;
+                                  if (uid != null) {
+                                    await ref.read(firebaseServiceProvider).updateUserField(
+                                      uid, 
+                                      'selectedApps', 
+                                      ref.read(onboardingProvider).selectedApps,
+                                    );
+                                    await appLockServiceProvider.syncLockedApps(uid);
+                                    await appLockServiceProvider.syncLimitStatus(uid);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Uygulama listeniz güncellendi!')),
+                                      );
+                                    }
+                                  }
+                                  if (mounted) {
+                                    context.pop();
+                                  }
+                                }
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -139,8 +162,84 @@ class _SelectAppsScreenState extends ConsumerState<SelectAppsScreen> {
                     ),
                     const SizedBox(height: 24),
                     if (GoRouterState.of(context).matchedLocation.contains('onboarding'))
-                      _StepIndicator(currentStep: 4),
+                      const _StepIndicator(currentStep: 4),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIOSPickerCard(BuildContext context, OnboardingState state, Translations translations) {
+    final count = state.selectedApps.length;
+    final isSelected = count > 0;
+    
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF39D2C0).withOpacity(0.3) : Colors.white.withOpacity(0.1), 
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isSelected ? '✅' : '📱',
+                style: const TextStyle(fontSize: 48),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                translations.get('selectAppsIOS'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                translations.get('selectAppsIOSDesc'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final int appsCount = await appLockServiceProvider.selectAppsIOS();
+                  if (appsCount > 0) {
+                    ref.read(onboardingProvider.notifier).setSelectedApps(
+                      List.generate(appsCount, (index) => 'App $index'),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isSelected ? const Color(0xFF39D2C0) : Colors.white,
+                  foregroundColor: isSelected ? Colors.white : AppColors.primaryBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  minimumSize: const Size(220, 56),
+                ),
+                icon: Icon(
+                  isSelected ? Icons.check_circle_outline : Icons.touch_app_rounded,
+                  color: isSelected ? Colors.white : AppColors.primaryBlue,
+                ),
+                label: Text(
+                  isSelected ? '$count Uygulama Seçildi' : 'Uygulamaları Seç',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -289,6 +388,14 @@ class _PermissionRequestDialog extends StatelessWidget {
                 translations: translations,
                 onRequest: () => appLockServiceProvider.requestAccessibilityPermission(),
               ),
+              const SizedBox(height: 20),
+              _PermissionItem(
+                icon: '⚙️',
+                title: translations.get('xiaomiPopups'),
+                description: translations.get('xiaomiPopupsDesc'),
+                translations: translations,
+                onRequest: () => appLockServiceProvider.openAppSettings(),
+              ),
             ],
             
             if (Platform.isIOS) ...[
@@ -429,7 +536,7 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(7, (index) {
+      children: List.generate(8, (index) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 4),

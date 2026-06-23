@@ -46,6 +46,18 @@ class AppLockService {
     return true;
   }
 
+  Future<bool> openAppSettings() async {
+    if (Platform.isAndroid) {
+      try {
+        await _lockChannel.invokeMethod('openAppSettings');
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<bool> requestNotificationPermission() async {
     final status = await Permission.notification.request();
     return status.isGranted;
@@ -61,6 +73,18 @@ class AppLockService {
       }
     }
     return true;
+  }
+
+  Future<int> selectAppsIOS() async {
+    if (Platform.isIOS) {
+      try {
+        final int count = await _lockChannel.invokeMethod('selectAppsIOS');
+        return count;
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
   }
 
   /// Syncs locked apps from Firestore to Native SharedPreferences
@@ -80,10 +104,8 @@ class AppLockService {
     }
   }
 
-  /// Evaluates usage limit and updates Native SharedPreferences
+  /// Evaluates usage limit and updates Native SharedPreferences/Shields
   Future<void> syncLimitStatus(String uid) async {
-    if (!Platform.isAndroid) return;
-    
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (!doc.exists) return;
@@ -102,31 +124,43 @@ class AppLockService {
       final int bonusMinutes = data['bonusMinutes'] ?? 0;
       final int totalAllowedMinutes = dailyLimitMinutes + bonusMinutes;
 
-      // Calculate total usage of selected apps
-      for (var app in appsDynamic) {
-        final String packageName = app.toString();
-        final realPackage = _getRealPackageName(packageName);
-        if (realPackage.isNotEmpty) {
-          final int usage = await _lockChannel.invokeMethod('getAppUsageToday', {'packageName': realPackage});
-          totalUsage += usage;
-          appUsageMap[packageName] = usage;
+      if (Platform.isAndroid) {
+        // Calculate total usage of selected apps
+        for (var app in appsDynamic) {
+          final String packageName = app.toString();
+          final realPackage = _getRealPackageName(packageName);
+          if (realPackage.isNotEmpty) {
+            final int usage = await _lockChannel.invokeMethod('getAppUsageToday', {'packageName': realPackage});
+            totalUsage += usage;
+            appUsageMap[packageName] = usage;
+          }
         }
+      } else if (Platform.isIOS) {
+        totalUsage = data['todaysTotalUsageMinutes'] ?? 0;
       }
 
       final bool isLimitReached = totalUsage >= totalAllowedMinutes;
       await _lockChannel.invokeMethod('setLimitStatus', {'isLimitReached': isLimitReached});
 
-      final Map<String, dynamic> updates = {
-        'todaysUsageDetails': appUsageMap,
-        'todaysTotalUsageMinutes': totalUsage,
-      };
+      if (Platform.isAndroid) {
+        final Map<String, dynamic> updates = {
+          'todaysUsageDetails': appUsageMap,
+          'todaysTotalUsageMinutes': totalUsage,
+        };
 
-      if (isLimitReached && data['activeChallenge'] != null) {
-        updates['activeChallenge.exceededLimit'] = true;
+        if (isLimitReached && data['activeChallenge'] != null) {
+          updates['activeChallenge.exceededLimit'] = true;
+        }
+
+        // Update Firestore with the current usage report
+        await _firestore.collection('users').doc(uid).update(updates);
+      } else if (Platform.isIOS) {
+        if (isLimitReached && data['activeChallenge'] != null) {
+          await _firestore.collection('users').doc(uid).update({
+            'activeChallenge.exceededLimit': true,
+          });
+        }
       }
-
-      // Update Firestore with the current usage report
-      await _firestore.collection('users').doc(uid).update(updates);
 
     } catch (e) {
       print('SyncLimitStatus error: $e');
