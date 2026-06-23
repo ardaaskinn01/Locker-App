@@ -22,11 +22,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final TextEditingController _nameController = TextEditingController();
   String _appVersion = '1.0.0';
   bool _isEditingName = false;
+  bool _testModeEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
+    _loadTestMode();
+  }
+
+  Future<void> _loadTestMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _testModeEnabled = prefs.getBool('test_mode_enabled') ?? false;
+    });
   }
 
   Future<void> _loadPackageInfo() async {
@@ -220,6 +229,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: const Color(0xFF10B981),
                             title: translations.get('privacyPolicy'),
                             onTap: () => _launchURL('https://example.com/privacy'),
+                          ),
+                          _SettingsItem(
+                            icon: Icons.bug_report_rounded,
+                            color: const Color(0xFFEF4444),
+                            title: 'iOS Test Modu (Hızlı Süre)',
+                            trailing: Switch(
+                              value: _testModeEnabled,
+                              activeColor: const Color(0xFFEF4444),
+                              onChanged: (val) async {
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setBool('test_mode_enabled', val);
+                                setState(() {
+                                  _testModeEnabled = val;
+                                });
+                              },
+                            ),
                           ),
                         ]),
                       ]),

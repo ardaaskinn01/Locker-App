@@ -288,11 +288,11 @@ class FirebaseService {
     final now = DateTime.now();
     final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     
-    await docRef.update({
+    await docRef.set({
       'jetons': FieldValue.increment(rewardAmount),
       'totalJetonsEarned': FieldValue.increment(rewardAmount),
       'lastMiniGameDate': dateStr,
-    });
+    }, SetOptions(merge: true));
   }
 
   String? get currentUserId => _auth.currentUser?.uid;

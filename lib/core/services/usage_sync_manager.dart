@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/app_lock_service.dart';
 import '../services/firebase_service.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 final usageSyncProvider = Provider<UsageSyncManager>((ref) {
   final manager = UsageSyncManager(ref);
   ref.onDispose(() => manager.dispose());
@@ -15,19 +17,45 @@ final usageSyncProvider = Provider<UsageSyncManager>((ref) {
 class UsageSyncManager with WidgetsBindingObserver {
   final Ref ref;
   Timer? _timer;
-  DateTime? _backgroundTime;
 
   UsageSyncManager(this.ref) {
     WidgetsBinding.instance.addObserver(this);
   }
 
-  void startSync() {
+  void startSync() async {
     _timer?.cancel();
-    // Run immediately then every 60 seconds
+    await _checkAndSyncBackgroundTime();
     _performSync();
     _timer = Timer.periodic(const Duration(seconds: 60), (timer) {
       _performSync();
     });
+  }
+
+  Future<void> _checkAndSyncBackgroundTime() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final startTimeMs = prefs.getInt('background_start_time');
+      if (startTimeMs != null) {
+        await prefs.remove('background_start_time');
+        final startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMs);
+        final durationSeconds = DateTime.now().difference(startTime).inSeconds;
+        if (durationSeconds > 0) {
+          final testMode = prefs.getBool('test_mode_enabled') ?? false;
+          int usageMinutes = 0;
+          if (testMode) {
+            // Test mode: 10 seconds spent outside = 1 minute of usage
+            usageMinutes = (durationSeconds / 10).ceil();
+          } else {
+            usageMinutes = (durationSeconds / 60).floor();
+          }
+          if (usageMinutes > 0) {
+            await _addBackgroundUsageToFirestore(usageMinutes);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error checking background time on launch: $e');
+    }
   }
 
   Future<void> _performSync() async {
@@ -49,18 +77,35 @@ class UsageSyncManager with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (Platform.isIOS) {
-      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-        _backgroundTime = DateTime.now();
-      } else if (state == AppLifecycleState.resumed) {
-        if (_backgroundTime != null) {
-          final difference = DateTime.now().difference(_backgroundTime!).inMinutes;
-          _backgroundTime = null;
-          if (difference > 0) {
-            _addBackgroundUsageToFirestore(difference);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+          await prefs.setInt('background_start_time', DateTime.now().millisecondsSinceEpoch);
+        } else if (state == AppLifecycleState.resumed) {
+          final startTimeMs = prefs.getInt('background_start_time');
+          if (startTimeMs != null) {
+            await prefs.remove('background_start_time');
+            final startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMs);
+            final durationSeconds = DateTime.now().difference(startTime).inSeconds;
+            if (durationSeconds > 0) {
+              final testMode = prefs.getBool('test_mode_enabled') ?? false;
+              int usageMinutes = 0;
+              if (testMode) {
+                // Test mode: 10 seconds spent outside = 1 minute of usage
+                usageMinutes = (durationSeconds / 10).ceil();
+              } else {
+                usageMinutes = (durationSeconds / 60).floor();
+              }
+              if (usageMinutes > 0) {
+                await _addBackgroundUsageToFirestore(usageMinutes);
+              }
+            }
           }
         }
+      } catch (e) {
+        print('Error handling lifecycle background time: $e');
       }
     }
   }
