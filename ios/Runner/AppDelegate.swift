@@ -6,6 +6,8 @@ import SwiftUI
 import FamilyControls
 #endif
 
+import workmanager
+
 #if canImport(SwiftUI) && canImport(FamilyControls)
 @available(iOS 16.0, *)
 struct AppPickerView: View {
@@ -37,6 +39,7 @@ struct AppPickerView: View {
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+  private var wasLockedInsideApp = false
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -111,13 +114,19 @@ struct AppPickerView: View {
                 result(0)
                 
             case "getBackgroundTimeSpent":
-                let savedTime = UserDefaults.standard.double(forKey: "backgroundStartTime")
-                if savedTime > 0 {
+                if self.wasLockedInsideApp {
+                    self.wasLockedInsideApp = false
                     UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
-                    let diff = Date().timeIntervalSince1970 - savedTime
-                    result(Int(diff))
-                } else {
                     result(0)
+                } else {
+                    let savedTime = UserDefaults.standard.double(forKey: "backgroundStartTime")
+                    if savedTime > 0 {
+                        UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
+                        let diff = Date().timeIntervalSince1970 - savedTime
+                        result(Int(diff))
+                    } else {
+                        result(0)
+                    }
                 }
                 
             case "selectAppsIOS":
@@ -156,11 +165,30 @@ struct AppPickerView: View {
     })
 
     GeneratedPluginRegistrant.register(with: self)
+    
+    NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(protectedDataWillBecomeUnavailable),
+        name: UIApplication.protectedDataWillBecomeUnavailableNotification,
+        object: nil
+    )
+    
+    WorkmanagerPlugin.setPluginRegistrantCallback { registry in
+        GeneratedPluginRegistrant.register(with: registry)
+    }
+    
+    WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "be.tramckrijte.workmanager.BackgroundTask")
+    WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "daily-reset-task")
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   override func applicationDidEnterBackground(_ application: UIApplication) {
     UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "backgroundStartTime")
     super.applicationDidEnterBackground(application)
+  }
+
+  @objc private func protectedDataWillBecomeUnavailable() {
+    wasLockedInsideApp = true
   }
 }

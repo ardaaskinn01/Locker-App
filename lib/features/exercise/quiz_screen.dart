@@ -269,7 +269,7 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-class _ResultScreen extends ConsumerWidget {
+class _ResultScreen extends ConsumerStatefulWidget {
   final int correctCount;
   final int totalCount;
   final ExerciseModel exercise;
@@ -281,12 +281,38 @@ class _ResultScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isSuccess = correctCount >= (totalCount * 0.8);
+  ConsumerState<_ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<_ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isSuccess = widget.correctCount >= (widget.totalCount * 0.8);
+      final jetons = isSuccess ? 20 : 0;
+      final uid = ref.read(firebaseServiceProvider).currentUserId;
+      if (uid != null && isSuccess) {
+        await ref.read(firebaseServiceProvider).completeExercise(
+          uid,
+          widget.exercise.id,
+          type: widget.exercise.type.name,
+          level: widget.exercise.level,
+          language: widget.exercise.language,
+          score: widget.correctCount,
+          jetonReward: jetons,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuccess = widget.correctCount >= (widget.totalCount * 0.8);
     final jetons = isSuccess ? 20 : 0;
-    final scorePercentage = correctCount / totalCount;
-    final track = ref.watch(mergedExerciseTrackProvider((level: exercise.level, type: exercise.type)));
-    final currentIndex = track.indexWhere((e) => e.id == exercise.id);
+    final scorePercentage = widget.correctCount / widget.totalCount;
+    final track = ref.watch(mergedExerciseTrackProvider((level: widget.exercise.level, type: widget.exercise.type)));
+    final currentIndex = track.indexWhere((e) => e.id == widget.exercise.id);
     final nextExercise = (currentIndex != -1 && currentIndex < track.length - 1) ? track[currentIndex + 1] : null;
     final hasNext = nextExercise != null && nextExercise.content.isNotEmpty;
 
@@ -312,7 +338,7 @@ class _ResultScreen extends ConsumerWidget {
                         style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900),
                       ),
                       Text(
-                        '$correctCount / $totalCount',
+                        '${widget.correctCount} / ${widget.totalCount}',
                         style: const TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                     ],
@@ -350,8 +376,6 @@ class _ResultScreen extends ConsumerWidget {
 
             const SizedBox(height: 80),
 
-
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Column(
@@ -360,20 +384,7 @@ class _ResultScreen extends ConsumerWidget {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final uid = ref.read(firebaseServiceProvider).currentUserId;
-                        if (uid != null && isSuccess) {
-                          await ref.read(firebaseServiceProvider).completeExercise(
-                            uid,
-                            exercise.id,
-                            type: exercise.type.name,
-                            level: exercise.level,
-                            language: exercise.language,
-                            score: correctCount,
-                            jetonReward: jetons,
-                          );
-                        }
-                        
+                      onPressed: () {
                         ref.read(adServiceProvider).showInterstitial(
                           onComplete: () {
                             if (context.mounted) {

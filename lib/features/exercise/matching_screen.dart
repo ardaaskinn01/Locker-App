@@ -177,7 +177,7 @@ class _MemoryCard extends StatelessWidget {
   }
 }
 
-class _ResultScreen extends ConsumerWidget {
+class _ResultScreen extends ConsumerStatefulWidget {
   final ExerciseModel exercise;
   final int matches;
   final int total;
@@ -185,9 +185,33 @@ class _ResultScreen extends ConsumerWidget {
   const _ResultScreen({required this.exercise, required this.matches, required this.total});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final track = ref.watch(mergedExerciseTrackProvider((level: exercise.level, type: exercise.type)));
-    final currentIndex = track.indexWhere((e) => e.id == exercise.id);
+  ConsumerState<_ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<_ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final uid = ref.read(firebaseServiceProvider).currentUserId;
+      if (uid != null) {
+        await ref.read(firebaseServiceProvider).completeExercise(
+          uid,
+          widget.exercise.id,
+          type: widget.exercise.type.name,
+          level: widget.exercise.level,
+          language: widget.exercise.language,
+          score: widget.total,
+          jetonReward: 20,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final track = ref.watch(mergedExerciseTrackProvider((level: widget.exercise.level, type: widget.exercise.type)));
+    final currentIndex = track.indexWhere((e) => e.id == widget.exercise.id);
     final nextExercise = (currentIndex != -1 && currentIndex < track.length - 1) ? track[currentIndex + 1] : null;
     final hasNext = nextExercise != null && nextExercise.content.isNotEmpty;
 
@@ -234,8 +258,6 @@ class _ResultScreen extends ConsumerWidget {
 
             const SizedBox(height: 80),
 
-
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Column(
@@ -244,20 +266,7 @@ class _ResultScreen extends ConsumerWidget {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final uid = ref.read(firebaseServiceProvider).currentUserId;
-                        if (uid != null) {
-                          await ref.read(firebaseServiceProvider).completeExercise(
-                            uid,
-                            exercise.id,
-                            type: exercise.type.name,
-                            level: exercise.level,
-                            language: exercise.language,
-                            score: total,
-                            jetonReward: 20,
-                          );
-                        }
-                        
+                      onPressed: () {
                         ref.read(adServiceProvider).showInterstitial(
                           onComplete: () {
                             if (context.mounted) {

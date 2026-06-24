@@ -271,7 +271,7 @@ class _WordChip extends StatelessWidget {
   }
 }
 
-class _ResultScreen extends ConsumerWidget {
+class _ResultScreen extends ConsumerStatefulWidget {
   final int score;
   final int total;
   final ExerciseModel exercise;
@@ -279,11 +279,37 @@ class _ResultScreen extends ConsumerWidget {
   const _ResultScreen({required this.score, required this.total, required this.exercise});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isSuccess = score >= (total * 0.7); 
+  ConsumerState<_ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<_ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isSuccess = widget.score >= (widget.total * 0.7);
+      final jetons = isSuccess ? 20 : 0;
+      final uid = ref.read(firebaseServiceProvider).currentUserId;
+      if (uid != null && isSuccess) {
+        await ref.read(firebaseServiceProvider).completeExercise(
+          uid,
+          widget.exercise.id,
+          type: widget.exercise.type.name,
+          level: widget.exercise.level,
+          language: widget.exercise.language,
+          score: widget.score,
+          jetonReward: jetons,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuccess = widget.score >= (widget.total * 0.7); 
     final jetons = isSuccess ? 20 : 0;
-    final track = ref.watch(mergedExerciseTrackProvider((level: exercise.level, type: exercise.type)));
-    final currentIndex = track.indexWhere((e) => e.id == exercise.id);
+    final track = ref.watch(mergedExerciseTrackProvider((level: widget.exercise.level, type: widget.exercise.type)));
+    final currentIndex = track.indexWhere((e) => e.id == widget.exercise.id);
     final nextExercise = (currentIndex != -1 && currentIndex < track.length - 1) ? track[currentIndex + 1] : null;
     final hasNext = nextExercise != null && nextExercise.content.isNotEmpty;
     
@@ -307,7 +333,7 @@ class _ResultScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "Skor: $score / $total",
+              "Skor: ${widget.score} / ${widget.total}",
               style: const TextStyle(color: Colors.white70, fontSize: 18),
             ),
             const SizedBox(height: 48),
@@ -335,8 +361,6 @@ class _ResultScreen extends ConsumerWidget {
 
             const SizedBox(height: 80),
 
-
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Column(
@@ -345,20 +369,7 @@ class _ResultScreen extends ConsumerWidget {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final uid = ref.read(firebaseServiceProvider).currentUserId;
-                        if (uid != null && isSuccess) {
-                          await ref.read(firebaseServiceProvider).completeExercise(
-                            uid,
-                            exercise.id,
-                            type: exercise.type.name,
-                            level: exercise.level,
-                            language: exercise.language,
-                            score: score,
-                            jetonReward: jetons,
-                          );
-                        }
-                        
+                      onPressed: () {
                         ref.read(adServiceProvider).showInterstitial(
                           onComplete: () {
                             if (context.mounted) {

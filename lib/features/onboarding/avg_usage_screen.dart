@@ -93,22 +93,22 @@ class AvgUsageScreen extends ConsumerWidget {
                       ),
                       child: Slider(
                         value: state.avgUsage,
-                        min: 1.0,
-                        max: 7.0,
-                        divisions: 12, // 0.5 adımlarla (7-1)*2
+                        min: 5.0,
+                        max: 9.0,
+                        divisions: 8, // 0.5 adımlarla (9-5)*2
                         onChanged: (val) {
                           ref.read(onboardingProvider.notifier).setAvgUsage(val);
                         },
                       ),
                     ),
-                    // Alt Etiketler (1s ... 7s)
+                    // Alt Etiketler (5s ... 9s)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(7, (index) {
+                        children: List.generate(5, (index) {
                           return Text(
-                            '${index + 1}h',
+                            '${index + 5}h',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.5),
                               fontSize: 12,

@@ -104,15 +104,24 @@ class MatchingNotifier extends StateNotifier<MatchingState> {
       if (firstItem.pairId == item.pairId) {
         // MATCH!
         final matches = state.matchesFound + 1;
+        final isLast = matches == state.totalPairs;
+        
         state = state.copyWith(
           matchesFound: matches,
           items: state.items.map((i) {
             if (i.pairId == item.pairId) return i.copyWith(isMatched: true, isFlipped: true);
             return i;
           }).toList(),
-          isFinished: matches == state.totalPairs,
-          isBusy: false,
+          isBusy: true,
         );
+
+        if (isLast) {
+          Timer(const Duration(milliseconds: 800), () {
+            state = state.copyWith(isFinished: true, isBusy: false);
+          });
+        } else {
+          state = state.copyWith(isBusy: false);
+        }
       } else {
         // FAIL!
         // Show error color then flip back after 1 second

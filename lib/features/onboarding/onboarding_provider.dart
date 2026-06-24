@@ -16,7 +16,7 @@ class OnboardingState {
     this.appLanguage = '',
     this.userName = '',
     this.referralSource = '',
-    this.avgUsage = 4.0,
+    this.avgUsage = 5.0,
     this.selectedApps = const [],
     this.dailyLimit = 0.0,
     this.targetLanguage = '',
