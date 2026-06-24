@@ -71,9 +71,19 @@ class AppLockService {
         #if canImport(ManagedSettings) && canImport(FamilyControls)
         if #available(iOS 16.0, *) {
             if isLimitReached {
-                store.shield.applications = selectionToShield.applicationTokens
-                store.shield.applicationCategories = .specific(selectionToShield.categoryTokens, except: Set<ApplicationToken>())
-                print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
+                if !selectionToShield.applicationTokens.isEmpty {
+                    store.shield.applications = selectionToShield.applicationTokens
+                    print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
+                } else {
+                    store.shield.applications = nil
+                }
+
+                if !selectionToShield.categoryTokens.isEmpty {
+                    store.shield.applicationCategories = .specific(selectionToShield.categoryTokens, except: Set<ApplicationToken>())
+                    print("iOS Shield Restrictions applied to \(selectionToShield.categoryTokens.count) categories.")
+                } else {
+                    store.shield.applicationCategories = nil
+                }
             } else {
                 // Remove shields
                 store.shield.applications = nil

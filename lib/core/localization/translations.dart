@@ -141,10 +141,14 @@ final _tr = <String, String>{
   'xiaomiBatteryStep2': 'Bunu "Kısıtlama Yok" (No restrictions) olarak ayarlayın. Böylece HyperOS arka planda kilit servisini sonlandırmaz.',
   'permissionAlertTitle': 'İzinler Eksik',
   'permissionAlertMessage': 'Uygulamaları kilitleyebilmek için Kullanım Erişimi ve Erişilebilirlik izinleri gereklidir. İzinleri vermeden devam etmek istiyor musunuz?',
+  'permissionAlertMessageIOS': 'Uygulamaları kilitleyebilmek için Ekran Süresi izni gereklidir. İzin vermeden devam etmek istiyor musunuz?',
+  'screenTimeDeniedTitle': 'Ekran Süresi İzni Gerekli',
+  'screenTimeDeniedMessage': 'Uygulamaları kilitleyebilmek için Ekran Süresi izni vermelisiniz.\n\nEğer izni daha önce reddettiyseniz, iOS sistemi gereği bu izin penceresi tekrar açılmaz. İzni vermek için lütfen uygulamayı silip tekrar yükleyin.',
   'permissionAlertYes': 'Evet, Devam Et',
   'permissionAlertNo': 'Geri Dön ve İzin Ver',
   'selectAppsIOS': 'Apple Ekran Süresi ile Seç',
   'selectAppsIOSDesc': 'iOS kısıtlamalarını yönetmek ve kilitlenecek uygulamaları seçmek için Apple\'ın yerel ekran süresi seçicisini açın.',
+  'close': 'Kapat',
 };
 
 final _en = <String, String>{
@@ -259,8 +263,12 @@ final _en = <String, String>{
   'xiaomiBatteryStep2': 'Select \'No restrictions\' to prevent HyperOS/MIUI from terminating the background service.',
   'permissionAlertTitle': 'Permissions Missing',
   'permissionAlertMessage': 'Usage Access and Accessibility permissions are required to lock apps. Do you want to continue without granting them?',
+  'permissionAlertMessageIOS': 'Screen Time permission is required to lock apps. Do you want to continue without granting it?',
+  'screenTimeDeniedTitle': 'Screen Time Permission Required',
+  'screenTimeDeniedMessage': 'You must grant Screen Time permission to lock apps.\n\nIf you previously denied this permission, iOS will not prompt for it again. Please reinstall the app to request the permission again.',
   'permissionAlertYes': 'Yes, Continue',
   'permissionAlertNo': 'Go Back and Grant',
   'selectAppsIOS': 'Select with Apple Screen Time',
   'selectAppsIOSDesc': 'Open Apple\'s native screen time picker to choose which apps you want to restrict.',
+  'close': 'Close',
 };

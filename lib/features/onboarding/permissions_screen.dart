@@ -137,7 +137,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
             ],
           ),
           content: Text(
-            translations.get('permissionAlertMessage'),
+            translations.get('permissionAlertMessageIOS'),
             style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
           ),
           actions: [
@@ -256,7 +256,30 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                             if (mounted) {
                               setState(() => _screenTimeGranted = granted);
                               if (!granted) {
-                                await appLockServiceProvider.openAppSettings();
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    backgroundColor: const Color(0xFF1E2841),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: Text(
+                                      translations.get('screenTimeDeniedTitle'),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                    content: Text(
+                                      translations.get('screenTimeDeniedMessage'),
+                                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: Text(
+                                          translations.get('close'),
+                                          style: const TextStyle(color: Color(0xFF39D2C0), fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               }
                             }
                           },
