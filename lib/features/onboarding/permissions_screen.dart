@@ -280,6 +280,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                                     ],
                                   ),
                                 );
+                              }
                             }
                           },
                           buttonLabel: translations.get('enable'),
