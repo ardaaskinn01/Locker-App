@@ -280,9 +280,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                                     ],
                                   ),
                                 );
-                              }
                             }
                           },
+                          buttonLabel: translations.get('enable'),
                           translations: translations,
                         ),
                         const SizedBox(height: 16),
@@ -362,6 +362,7 @@ class _PermissionCard extends StatelessWidget {
   final bool isGranted;
   final VoidCallback onAction;
   final Translations translations;
+  final String? buttonLabel;
 
   const _PermissionCard({
     required this.icon,
@@ -370,6 +371,7 @@ class _PermissionCard extends StatelessWidget {
     required this.isGranted,
     required this.onAction,
     required this.translations,
+    this.buttonLabel,
   });
 
   @override
@@ -454,7 +456,7 @@ class _PermissionCard extends StatelessWidget {
                       ],
                     )
                   : Text(
-                      translations.get('goToSettings'),
+                      buttonLabel ?? translations.get('goToSettings'),
                       style: const TextStyle(
                         color: AppColors.primaryBlue,
                         fontSize: 12,

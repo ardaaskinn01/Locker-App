@@ -149,6 +149,7 @@ final _tr = <String, String>{
   'selectAppsIOS': 'Apple Ekran Süresi ile Seç',
   'selectAppsIOSDesc': 'iOS kısıtlamalarını yönetmek ve kilitlenecek uygulamaları seçmek için Apple\'ın yerel ekran süresi seçicisini açın.',
   'close': 'Kapat',
+  'enable': 'Etkinleştir',
 };
 
 final _en = <String, String>{
@@ -271,4 +272,5 @@ final _en = <String, String>{
   'selectAppsIOS': 'Select with Apple Screen Time',
   'selectAppsIOSDesc': 'Open Apple\'s native screen time picker to choose which apps you want to restrict.',
   'close': 'Close',
+  'enable': 'Enable',
 };
