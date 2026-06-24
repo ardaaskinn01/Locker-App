@@ -84,6 +84,18 @@ class AppLockService {
     return 0;
   }
 
+  static Future<int> getBackgroundTimeSpent() async {
+    if (Platform.isIOS) {
+      try {
+        final int seconds = await _lockChannel.invokeMethod('getBackgroundTimeSpent');
+        return seconds;
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
+  }
+
   /// Syncs locked apps from Firestore to Native SharedPreferences
   Future<void> syncLockedApps(String uid) async {
     if (!Platform.isAndroid) return;

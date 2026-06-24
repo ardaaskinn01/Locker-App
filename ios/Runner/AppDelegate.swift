@@ -110,6 +110,16 @@ struct AppPickerView: View {
                 // iOS does not allow querying per-app usage via API without DeviceActivity reports.
                 result(0)
                 
+            case "getBackgroundTimeSpent":
+                let savedTime = UserDefaults.standard.double(forKey: "backgroundStartTime")
+                if savedTime > 0 {
+                    UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
+                    let diff = Date().timeIntervalSince1970 - savedTime
+                    result(Int(diff))
+                } else {
+                    result(0)
+                }
+                
             case "selectAppsIOS":
                 #if canImport(FamilyControls)
                 if #available(iOS 16.0, *) {
@@ -147,5 +157,10 @@ struct AppPickerView: View {
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func applicationDidEnterBackground(_ application: UIApplication) {
+    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "backgroundStartTime")
+    super.applicationDidEnterBackground(application)
   }
 }

@@ -32,29 +32,25 @@ class UsageSyncManager with WidgetsBindingObserver {
   }
 
   Future<void> _checkAndSyncBackgroundTime() async {
+    if (!Platform.isIOS) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final startTimeMs = prefs.getInt('background_start_time');
-      if (startTimeMs != null) {
-        await prefs.remove('background_start_time');
-        final startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMs);
-        final durationSeconds = DateTime.now().difference(startTime).inSeconds;
-        if (durationSeconds > 0) {
-          final testMode = prefs.getBool('test_mode_enabled') ?? false;
-          int usageMinutes = 0;
-          if (testMode) {
-            // Test mode: 10 seconds spent outside = 1 minute of usage
-            usageMinutes = (durationSeconds / 10).ceil();
-          } else {
-            usageMinutes = (durationSeconds / 60).floor();
-          }
-          if (usageMinutes > 0) {
-            await _addBackgroundUsageToFirestore(usageMinutes);
-          }
+      final int durationSeconds = await AppLockService.getBackgroundTimeSpent();
+      if (durationSeconds > 0) {
+        final prefs = await SharedPreferences.getInstance();
+        final testMode = prefs.getBool('test_mode_enabled') ?? false;
+        int usageMinutes = 0;
+        if (testMode) {
+          // Test mode: 10 seconds spent outside = 1 minute of usage
+          usageMinutes = (durationSeconds / 10).ceil();
+        } else {
+          usageMinutes = (durationSeconds / 60).floor();
+        }
+        if (usageMinutes > 0) {
+          await _addBackgroundUsageToFirestore(usageMinutes);
         }
       }
     } catch (e) {
-      print('Error checking background time on launch: $e');
+      print('Error checking background time: $e');
     }
   }
 
@@ -79,33 +75,8 @@ class UsageSyncManager with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (Platform.isIOS) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-          await prefs.setInt('background_start_time', DateTime.now().millisecondsSinceEpoch);
-        } else if (state == AppLifecycleState.resumed) {
-          final startTimeMs = prefs.getInt('background_start_time');
-          if (startTimeMs != null) {
-            await prefs.remove('background_start_time');
-            final startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMs);
-            final durationSeconds = DateTime.now().difference(startTime).inSeconds;
-            if (durationSeconds > 0) {
-              final testMode = prefs.getBool('test_mode_enabled') ?? false;
-              int usageMinutes = 0;
-              if (testMode) {
-                // Test mode: 10 seconds spent outside = 1 minute of usage
-                usageMinutes = (durationSeconds / 10).ceil();
-              } else {
-                usageMinutes = (durationSeconds / 60).floor();
-              }
-              if (usageMinutes > 0) {
-                await _addBackgroundUsageToFirestore(usageMinutes);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        print('Error handling lifecycle background time: $e');
+      if (state == AppLifecycleState.resumed) {
+        await _checkAndSyncBackgroundTime();
       }
     }
   }
