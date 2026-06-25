@@ -17,7 +17,19 @@ target_name = 'DeviceActivityMonitor'
 existing_target = project.targets.find { |t| t.name == target_name }
 
 if existing_target
-  puts "Target '#{target_name}' already exists in Xcode project. Skipping creation."
+  puts "Target '#{target_name}' already exists in Xcode project. Updating build settings..."
+  existing_target.build_configurations.each do |config|
+    config.build_settings['PRODUCT_NAME'] = 'DeviceActivityMonitor'
+    config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.aasoft.lockapp.DeviceActivityMonitor'
+    config.build_settings['INFOPLIST_FILE'] = 'DeviceActivityMonitor/Info.plist'
+    config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'DeviceActivityMonitor/DeviceActivityMonitor.entitlements'
+    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+    config.build_settings['SWIFT_VERSION'] = '5.0'
+    config.build_settings['LD_RUNPATH_SEARCH_PATHS'] = '$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks'
+    config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+  end
+  project.save
+  puts "Xcode project target build settings updated successfully."
 else
   puts "Creating target '#{target_name}' using project at #{project_path}..."
   # Create the App Extension target (iOS 16.0 is required for Device Activity)
@@ -25,6 +37,7 @@ else
   
   # Configure build settings for all build configurations
   ext_target.build_configurations.each do |config|
+    config.build_settings['PRODUCT_NAME'] = 'DeviceActivityMonitor'
     config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.aasoft.lockapp.DeviceActivityMonitor'
     config.build_settings['INFOPLIST_FILE'] = 'DeviceActivityMonitor/Info.plist'
     config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'DeviceActivityMonitor/DeviceActivityMonitor.entitlements'
