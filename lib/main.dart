@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -45,6 +46,33 @@ void callbackDispatcher() {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
+      if (Platform.isIOS) {
+        try {
+          final int durationSeconds = await AppLockService.getBackgroundTimeSpent(isBackgroundTask: true);
+          if (durationSeconds > 0) {
+            final prefs = await SharedPreferences.getInstance();
+            final testMode = prefs.getBool('test_mode_enabled') ?? false;
+            int usageMinutes = 0;
+            if (testMode) {
+              usageMinutes = (durationSeconds / 10).ceil();
+            } else {
+              usageMinutes = (durationSeconds / 60).floor();
+            }
+            if (usageMinutes > 0) {
+              final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+              if (doc.exists) {
+                final currentUsage = doc.data()?['todaysTotalUsageMinutes'] ?? 0;
+                await FirebaseFirestore.instance.collection('users').doc(uid).update({
+                  'todaysTotalUsageMinutes': currentUsage + usageMinutes,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // Silent catch in background execution
+        }
+      }
+
       await jetonResetServiceProvider.checkAndReset(uid);
       await appLockServiceProvider.syncLockedApps(uid);
       await appLockServiceProvider.syncLimitStatus(uid);

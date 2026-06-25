@@ -72,6 +72,18 @@ class AppLockService {
     return true;
   }
 
+  Future<bool> checkBackgroundRefreshAccess() async {
+    if (Platform.isIOS) {
+      try {
+        final bool granted = await _lockChannel.invokeMethod('checkBackgroundRefreshAccess');
+        return granted;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<int> selectAppsIOS() async {
     if (Platform.isIOS) {
       try {
@@ -84,10 +96,13 @@ class AppLockService {
     return 0;
   }
 
-  static Future<int> getBackgroundTimeSpent() async {
+  static Future<int> getBackgroundTimeSpent({bool isBackgroundTask = false}) async {
     if (Platform.isIOS) {
       try {
-        final int seconds = await _lockChannel.invokeMethod('getBackgroundTimeSpent');
+        final int seconds = await _lockChannel.invokeMethod(
+          'getBackgroundTimeSpent',
+          {'isBackgroundTask': isBackgroundTask},
+        );
         return seconds;
       } catch (e) {
         return 0;

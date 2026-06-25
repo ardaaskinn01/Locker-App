@@ -88,6 +88,10 @@ struct AppPickerView: View {
                 result(false)
                 #endif
                 
+            case "checkBackgroundRefreshAccess":
+                let status = UIApplication.shared.backgroundRefreshStatus
+                result(status == .available)
+                
             case "openUsageStatsSettings", "openAccessibilitySettings", "openAppSettings":
                 // On iOS, open the Settings app for Screen Time / Permissions
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -114,6 +118,12 @@ struct AppPickerView: View {
                 result(0)
                 
             case "getBackgroundTimeSpent":
+                var isBackgroundTask = false
+                if let args = call.arguments as? [String: Any],
+                   let isBg = args["isBackgroundTask"] as? Bool {
+                    isBackgroundTask = isBg
+                }
+                
                 if self.wasLockedInsideApp {
                     self.wasLockedInsideApp = false
                     UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
@@ -121,8 +131,13 @@ struct AppPickerView: View {
                 } else {
                     let savedTime = UserDefaults.standard.double(forKey: "backgroundStartTime")
                     if savedTime > 0 {
-                        UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
-                        let diff = Date().timeIntervalSince1970 - savedTime
+                        let now = Date().timeIntervalSince1970
+                        let diff = now - savedTime
+                        if isBackgroundTask {
+                            UserDefaults.standard.set(now, forKey: "backgroundStartTime")
+                        } else {
+                            UserDefaults.standard.removeObject(forKey: "backgroundStartTime")
+                        }
                         result(Int(diff))
                     } else {
                         result(0)

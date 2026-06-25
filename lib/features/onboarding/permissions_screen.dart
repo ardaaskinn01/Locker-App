@@ -20,6 +20,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
   bool _accessibilityGranted = false;
   bool _notificationsGranted = false;
   bool _screenTimeGranted = false;
+  bool _backgroundRefreshGranted = false;
   bool _checking = true;
 
   @override
@@ -59,9 +60,11 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
         }
       } else if (Platform.isIOS) {
         final screenTime = await AppLockService.checkUsageAccess();
+        final backgroundRefresh = await appLockServiceProvider.checkBackgroundRefreshAccess();
         if (mounted) {
           setState(() {
             _screenTimeGranted = screenTime;
+            _backgroundRefreshGranted = backgroundRefresh;
             _notificationsGranted = notificationStatus.isGranted;
             _checking = false;
           });
@@ -118,7 +121,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
         ),
       );
       if (proceed != true) return;
-    } else if (Platform.isIOS && !_screenTimeGranted) {
+    } else if (Platform.isIOS && (!_screenTimeGranted || !_backgroundRefreshGranted)) {
       final bool? proceed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -282,6 +285,18 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                                 );
                               }
                             }
+                          },
+                          buttonLabel: translations.get('enable'),
+                          translations: translations,
+                        ),
+                        const SizedBox(height: 16),
+                        _PermissionCard(
+                          icon: '🔄',
+                          title: translations.get('backgroundRefreshPermission'),
+                          description: translations.get('backgroundRefreshPermissionDesc'),
+                          isGranted: _backgroundRefreshGranted,
+                          onAction: () async {
+                            await appLockServiceProvider.openAppSettings();
                           },
                           buttonLabel: translations.get('enable'),
                           translations: translations,
