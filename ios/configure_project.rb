@@ -75,7 +75,7 @@ if main_target
   
   # 2. Add the extension target's product to the "Embed App Extensions" Copy Files phase
   embed_phase = main_target.copy_files_build_phases.find do |p| 
-    p.name == 'Embed App Extensions' || (p.respond_to?(:dst_subfolder_spec) && p.dst_subfolder_spec.to_s == '13')
+    (p.respond_to?(:name) && p.name == 'Embed App Extensions') || (p.respond_to?(:dst_subfolder_spec) && p.dst_subfolder_spec.to_s == '13')
   end
   
   unless embed_phase
@@ -95,10 +95,10 @@ if main_target
   
   # 3. Ensure proper order of build phases to prevent Xcode 15+ dependency cycles
   thin_binary_index = main_target.build_phases.index do |p| 
-    p.name == 'Thin Binary' || (p.respond_to?(:shell_script) && p.shell_script&.include?('xcode_backend.sh embed_and_thin'))
+    (p.respond_to?(:name) && p.name == 'Thin Binary') || (p.respond_to?(:shell_script) && p.shell_script&.include?('xcode_backend.sh embed_and_thin'))
   end
   embed_phase_index = main_target.build_phases.index do |p| 
-    p.name == 'Embed App Extensions' || (p.respond_to?(:dst_subfolder_spec) && p.dst_subfolder_spec.to_s == '13')
+    (p.respond_to?(:name) && p.name == 'Embed App Extensions') || (p.respond_to?(:dst_subfolder_spec) && p.dst_subfolder_spec.to_s == '13')
   end
   
   if thin_binary_index && embed_phase_index && embed_phase_index > thin_binary_index
