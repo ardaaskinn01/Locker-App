@@ -1,8 +1,13 @@
 require 'xcodeproj'
 
+# Support running from either the repository root or the 'ios' directory
 project_path = 'ios/Runner.xcodeproj'
+if !File.exist?(project_path) && File.exist?('Runner.xcodeproj')
+  project_path = 'Runner.xcodeproj'
+end
+
 unless File.exist?(project_path)
-  puts "Error: #{project_path} not found."
+  puts "Error: Runner.xcodeproj not found at #{project_path}."
   exit 1
 end
 
@@ -14,7 +19,7 @@ existing_target = project.targets.find { |t| t.name == target_name }
 if existing_target
   puts "Target '#{target_name}' already exists in Xcode project. Skipping creation."
 else
-  puts "Creating target '#{target_name}'..."
+  puts "Creating target '#{target_name}' using project at #{project_path}..."
   # Create the App Extension target (iOS 16.0 is required for Device Activity)
   ext_target = project.new_target(:app_extension, target_name, :ios, '16.0')
   
