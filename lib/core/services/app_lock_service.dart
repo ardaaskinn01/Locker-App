@@ -164,7 +164,11 @@ class AppLockService {
       }
 
       final bool isLimitReached = totalUsage >= totalAllowedMinutes;
-      await _lockChannel.invokeMethod('setLimitStatus', {'isLimitReached': isLimitReached});
+      await _lockChannel.invokeMethod('setLimitStatus', {
+        'isLimitReached': isLimitReached,
+        'totalAllowedMinutes': totalAllowedMinutes,
+        'todaysTotalUsageMinutes': totalUsage,
+      });
 
       if (Platform.isAndroid) {
         final Map<String, dynamic> updates = {

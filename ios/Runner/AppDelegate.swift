@@ -102,7 +102,13 @@ struct AppPickerView: View {
             case "setLimitStatus":
                 if let args = call.arguments as? [String: Any],
                    let isLimitReached = args["isLimitReached"] as? Bool {
-                    AppLockService.shared.setShieldedApps(isLimitReached: isLimitReached)
+                    let totalAllowedMinutes = args["totalAllowedMinutes"] as? Int ?? 0
+                    let todaysTotalUsageMinutes = args["todaysTotalUsageMinutes"] as? Int ?? 0
+                    AppLockService.shared.setShieldedApps(
+                        isLimitReached: isLimitReached,
+                        totalAllowedMinutes: totalAllowedMinutes,
+                        todaysTotalUsageMinutes: todaysTotalUsageMinutes
+                    )
                     result(nil)
                 } else {
                     result(FlutterError(code: "INVALID_ARGS", message: "Arguments missing", details: nil))

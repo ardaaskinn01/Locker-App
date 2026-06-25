@@ -12,6 +12,17 @@ import DeviceActivity
 import ManagedSettings
 #endif
 
+#if canImport(DeviceActivity)
+@available(iOS 16.0, *)
+extension DeviceActivityName {
+    static let dailyLimit = DeviceActivityName("com.aasoft.lockapp.dailyLimit")
+}
+@available(iOS 16.0, *)
+extension DeviceActivityEvent.Name {
+    static let limitReached = DeviceActivityEvent.Name("com.aasoft.lockapp.limitReached")
+}
+#endif
+
 @available(iOS 15.0, *)
 class AppLockService {
     static let shared = AppLockService()
@@ -28,7 +39,12 @@ class AppLockService {
     }
     #endif
     
+    private let suiteName = "group.com.aasoft.lockapp"
     private let selectionKey = "LockAppSelection"
+    
+    var sharedDefaults: UserDefaults? {
+        return UserDefaults(suiteName: suiteName)
+    }
     
     init() {
         loadSelection()
@@ -66,30 +82,128 @@ class AppLockService {
         #endif
     }
 
-    // Set shielded applications based on selection tokens
-    func setShieldedApps(isLimitReached: Bool) {
+    // Set shielded applications based on selection tokens and start/stop device activity monitoring
+    func setShieldedApps(isLimitReached: Bool, totalAllowedMinutes: Int, todaysTotalUsageMinutes: Int) {
         #if canImport(ManagedSettings) && canImport(FamilyControls)
         if #available(iOS 16.0, *) {
+            // Save to shared defaults so the extension can read it
+            sharedDefaults?.set(isLimitReached, forKey: "isLimitReached")
+            sharedDefaults?.set(totalAllowedMinutes, forKey: "totalAllowedMinutes")
+            sharedDefaults?.set(todaysTotalUsageMinutes, forKey: "todaysTotalUsageMinutes")
+            
+            if isLimitReached {
+                applyShields()
+                stopMonitoring()
+            } else {
+                liftShields()
+                let remainingMinutes = max(1, totalAllowedMinutes - todaysTotalUsageMinutes)
+                startMonitoring(remainingMinutes: remainingMinutes)
+            }
+        } else {
+            // Fallback for iOS 15
+            setShieldedAppsLegacy(isLimitReached: isLimitReached)
+        }
+        #endif
+    }
+    
+    private func applyShields() {
+        #if canImport(ManagedSettings) && canImport(FamilyControls)
+        if #available(iOS 16.0, *) {
+            if !selectionToShield.applicationTokens.isEmpty {
+                store.shield.applications = selectionToShield.applicationTokens
+                print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
+            } else {
+                store.shield.applications = nil
+            }
+
+            if !selectionToShield.categoryTokens.isEmpty {
+                store.shield.applicationCategories = .specific(selectionToShield.categoryTokens, except: Set<ApplicationToken>())
+                print("iOS Shield Restrictions applied to \(selectionToShield.categoryTokens.count) categories.")
+            } else {
+                store.shield.applicationCategories = nil
+            }
+        }
+        #endif
+    }
+    
+    private func liftShields() {
+        #if canImport(ManagedSettings)
+        if #available(iOS 16.0, *) {
+            store.shield.applications = nil
+            store.shield.applicationCategories = nil
+            print("Shields lifted.")
+        }
+        #endif
+    }
+    
+    func setShieldedAppsLegacy(isLimitReached: Bool) {
+        #if canImport(ManagedSettings) && canImport(FamilyControls)
+        if #available(iOS 15.0, *) {
             if isLimitReached {
                 if !selectionToShield.applicationTokens.isEmpty {
                     store.shield.applications = selectionToShield.applicationTokens
-                    print("iOS Shield Restrictions applied to \(selectionToShield.applicationTokens.count) apps.")
                 } else {
                     store.shield.applications = nil
                 }
 
                 if !selectionToShield.categoryTokens.isEmpty {
                     store.shield.applicationCategories = .specific(selectionToShield.categoryTokens, except: Set<ApplicationToken>())
-                    print("iOS Shield Restrictions applied to \(selectionToShield.categoryTokens.count) categories.")
                 } else {
                     store.shield.applicationCategories = nil
                 }
             } else {
-                // Remove shields
                 store.shield.applications = nil
                 store.shield.applicationCategories = nil
-                print("Shields lifted.")
             }
+        }
+        #endif
+    }
+    
+    func startMonitoring(remainingMinutes: Int) {
+        #if canImport(DeviceActivity) && canImport(FamilyControls)
+        if #available(iOS 16.0, *) {
+            let center = DeviceActivityCenter()
+            
+            guard !selectionToShield.applicationTokens.isEmpty || !selectionToShield.categoryTokens.isEmpty else {
+                center.stopMonitoring([.dailyLimit])
+                return
+            }
+            
+            // Define a daily schedule from current time to end of day
+            let calendar = Calendar.current
+            let now = Date()
+            let startComponents = calendar.dateComponents([.hour, .minute], from: now)
+            let endComponents = DateComponents(hour: 23, minute: 59, second: 59)
+            
+            let schedule = DeviceActivitySchedule(
+                intervalStart: startComponents,
+                intervalEnd: endComponents,
+                repeats: true
+            )
+            
+            let event = DeviceActivityEvent(
+                applications: selectionToShield.applicationTokens,
+                categories: selectionToShield.categoryTokens,
+                webDomains: selectionToShield.webDomainTokens,
+                threshold: DateComponents(minute: remainingMinutes)
+            )
+            
+            do {
+                try center.startMonitoring(.dailyLimit, during: schedule, events: [.limitReached: event])
+                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(remainingMinutes) mins")
+            } catch {
+                print("AppLockService: Failed to start DeviceActivity monitoring: \(error)")
+            }
+        }
+        #endif
+    }
+    
+    func stopMonitoring() {
+        #if canImport(DeviceActivity)
+        if #available(iOS 16.0, *) {
+            let center = DeviceActivityCenter()
+            center.stopMonitoring([.dailyLimit])
+            print("AppLockService: Stopped DeviceActivity monitoring.")
         }
         #endif
     }
@@ -98,8 +212,19 @@ class AppLockService {
         #if canImport(FamilyControls)
         do {
             let data = try JSONEncoder().encode(selectionToShield)
-            UserDefaults.standard.set(data, forKey: selectionKey)
-            print("Selection saved successfully.")
+            sharedDefaults?.set(data, forKey: selectionKey)
+            print("Selection saved successfully to App Group.")
+            
+            // Re-trigger monitoring update since apps selection changed
+            if let isLimitReached = sharedDefaults?.object(forKey: "isLimitReached") as? Bool,
+               let totalAllowedMinutes = sharedDefaults?.object(forKey: "totalAllowedMinutes") as? Int,
+               let todaysTotalUsageMinutes = sharedDefaults?.object(forKey: "todaysTotalUsageMinutes") as? Int {
+                setShieldedApps(
+                    isLimitReached: isLimitReached,
+                    totalAllowedMinutes: totalAllowedMinutes,
+                    todaysTotalUsageMinutes: todaysTotalUsageMinutes
+                )
+            }
         } catch {
             print("Failed to save selection: \(error)")
         }
@@ -108,10 +233,10 @@ class AppLockService {
     
     func loadSelection() {
         #if canImport(FamilyControls)
-        guard let data = UserDefaults.standard.data(forKey: selectionKey) else { return }
+        guard let data = sharedDefaults?.data(forKey: selectionKey) else { return }
         do {
             selectionToShield = try JSONDecoder().decode(FamilyActivitySelection.self, from: data)
-            print("Selection loaded successfully: \(selectionToShield.applicationTokens.count) apps.")
+            print("Selection loaded successfully from App Group: \(selectionToShield.applicationTokens.count) apps.")
         } catch {
             print("Failed to load selection: \(error)")
         }
