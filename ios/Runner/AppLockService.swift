@@ -96,8 +96,7 @@ class AppLockService {
                 stopMonitoring()
             } else {
                 liftShields()
-                let remainingMinutes = max(1, totalAllowedMinutes - todaysTotalUsageMinutes)
-                startMonitoring(remainingMinutes: remainingMinutes)
+                startMonitoring(totalAllowedMinutes: totalAllowedMinutes)
             }
         } else {
             // Fallback for iOS 15
@@ -159,7 +158,7 @@ class AppLockService {
         #endif
     }
     
-    func startMonitoring(remainingMinutes: Int) {
+    func startMonitoring(totalAllowedMinutes: Int) {
         #if canImport(DeviceActivity) && canImport(FamilyControls)
         if #available(iOS 16.0, *) {
             let center = DeviceActivityCenter()
@@ -169,10 +168,8 @@ class AppLockService {
                 return
             }
             
-            // Define a daily schedule from current time to end of day
-            let calendar = Calendar.current
-            let now = Date()
-            let startComponents = calendar.dateComponents([.hour, .minute], from: now)
+            // Define a static daily schedule from 00:00 to 23:59
+            let startComponents = DateComponents(hour: 0, minute: 0, second: 0)
             let endComponents = DateComponents(hour: 23, minute: 59, second: 59)
             
             let schedule = DeviceActivitySchedule(
@@ -181,16 +178,18 @@ class AppLockService {
                 repeats: true
             )
             
+            let limitMinutes = max(1, totalAllowedMinutes)
             let event = DeviceActivityEvent(
                 applications: selectionToShield.applicationTokens,
                 categories: selectionToShield.categoryTokens,
                 webDomains: selectionToShield.webDomainTokens,
-                threshold: DateComponents(minute: remainingMinutes)
+                threshold: DateComponents(minute: limitMinutes),
+                includesPastActivity: true
             )
             
             do {
                 try center.startMonitoring(.dailyLimit, during: schedule, events: [.limitReached: event])
-                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(remainingMinutes) mins")
+                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(limitMinutes) mins (includes past activity)")
             } catch {
                 print("AppLockService: Failed to start DeviceActivity monitoring: \(error)")
             }
