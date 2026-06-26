@@ -179,17 +179,30 @@ class AppLockService {
             )
             
             let limitMinutes = max(1, totalAllowedMinutes)
-            let event = DeviceActivityEvent(
-                applications: selectionToShield.applicationTokens,
-                categories: selectionToShield.categoryTokens,
-                webDomains: selectionToShield.webDomainTokens,
-                threshold: DateComponents(minute: limitMinutes),
-                includesPastActivity: true
-            )
+            let event: DeviceActivityEvent
+            
+            // iOS 17.4 ve sonrasında 'includesPastActivity' parametresini kullanabiliriz
+            if #available(iOS 17.4, *) {
+                event = DeviceActivityEvent(
+                    applications: selectionToShield.applicationTokens,
+                    categories: selectionToShield.categoryTokens,
+                    webDomains: selectionToShield.webDomainTokens,
+                    threshold: DateComponents(minute: limitMinutes),
+                    includesPastActivity: true
+                )
+            } else {
+                // iOS 16.0 - 17.3 arası için fallback (includesPastActivity parametresi olmadan)
+                event = DeviceActivityEvent(
+                    applications: selectionToShield.applicationTokens,
+                    categories: selectionToShield.categoryTokens,
+                    webDomains: selectionToShield.webDomainTokens,
+                    threshold: DateComponents(minute: limitMinutes)
+                )
+            }
             
             do {
                 try center.startMonitoring(.dailyLimit, during: schedule, events: [.limitReached: event])
-                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(limitMinutes) mins (includes past activity)")
+                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(limitMinutes) mins")
             } catch {
                 print("AppLockService: Failed to start DeviceActivity monitoring: \(error)")
             }
