@@ -46,10 +46,10 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
   Future<void> _checkAllPermissions() async {
     setState(() => _checking = true);
     try {
-      final notificationStatus = await Permission.notification.status;
       if (Platform.isAndroid) {
         final usage = await AppLockService.checkUsageAccess();
         final accessibility = await AppLockService.checkAccessibilityAccess();
+        final notificationStatus = await Permission.notification.status;
         if (mounted) {
           setState(() {
             _usageGranted = usage;
@@ -61,11 +61,13 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
       } else if (Platform.isIOS) {
         final screenTime = await AppLockService.checkUsageAccess();
         final backgroundRefresh = await appLockServiceProvider.checkBackgroundRefreshAccess();
+        // Use native UNUserNotificationCenter check for accurate iOS status
+        final notificationsGranted = await appLockServiceProvider.checkNotificationPermission();
         if (mounted) {
           setState(() {
             _screenTimeGranted = screenTime;
             _backgroundRefreshGranted = backgroundRefresh;
-            _notificationsGranted = notificationStatus.isGranted;
+            _notificationsGranted = notificationsGranted;
             _checking = false;
           });
         }
@@ -311,7 +313,15 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> with Widg
                         isGranted: _notificationsGranted,
                         onAction: () async {
                           final granted = await appLockServiceProvider.requestNotificationPermission();
-                          setState(() => _notificationsGranted = granted);
+                          if (mounted) {
+                            setState(() => _notificationsGranted = granted);
+                            // Re-check after a short delay so iOS system dialog result is settled
+                            if (!granted && Platform.isIOS) {
+                              await Future.delayed(const Duration(milliseconds: 500));
+                              final recheck = await appLockServiceProvider.checkNotificationPermission();
+                              if (mounted) setState(() => _notificationsGranted = recheck);
+                            }
+                          }
                         },
                         translations: translations,
                       ),

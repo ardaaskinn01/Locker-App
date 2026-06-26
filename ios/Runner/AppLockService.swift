@@ -96,7 +96,7 @@ class AppLockService {
                 stopMonitoring()
             } else {
                 liftShields()
-                startMonitoring(totalAllowedMinutes: totalAllowedMinutes)
+                startMonitoring(totalAllowedMinutes: totalAllowedMinutes, todaysTotalUsageMinutes: todaysTotalUsageMinutes)
             }
         } else {
             // Fallback for iOS 15
@@ -158,7 +158,7 @@ class AppLockService {
         #endif
     }
     
-    func startMonitoring(totalAllowedMinutes: Int) {
+    func startMonitoring(totalAllowedMinutes: Int, todaysTotalUsageMinutes: Int) {
         #if canImport(DeviceActivity) && canImport(FamilyControls)
         if #available(iOS 16.0, *) {
             let center = DeviceActivityCenter()
@@ -167,6 +167,11 @@ class AppLockService {
                 center.stopMonitoring([.dailyLimit])
                 return
             }
+            
+            // Calculate REMAINING minutes so DeviceActivity only counts from NOW onwards.
+            // The Dart side already tracks cumulative usage; we pass remaining time as the
+            // threshold so we don't accidentally fire early due to includesPastActivity.
+            let remainingMinutes = max(1, totalAllowedMinutes - todaysTotalUsageMinutes)
             
             // Define a static daily schedule from 00:00 to 23:59
             let startComponents = DateComponents(hour: 0, minute: 0, second: 0)
@@ -178,31 +183,19 @@ class AppLockService {
                 repeats: true
             )
             
-            let limitMinutes = max(1, totalAllowedMinutes)
-            let event: DeviceActivityEvent
-            
-            // iOS 17.4 ve sonrasında 'includesPastActivity' parametresini kullanabiliriz
-            if #available(iOS 17.4, *) {
-                event = DeviceActivityEvent(
-                    applications: selectionToShield.applicationTokens,
-                    categories: selectionToShield.categoryTokens,
-                    webDomains: selectionToShield.webDomainTokens,
-                    threshold: DateComponents(minute: limitMinutes),
-                    includesPastActivity: true
-                )
-            } else {
-                // iOS 16.0 - 17.3 arası için fallback (includesPastActivity parametresi olmadan)
-                event = DeviceActivityEvent(
-                    applications: selectionToShield.applicationTokens,
-                    categories: selectionToShield.categoryTokens,
-                    webDomains: selectionToShield.webDomainTokens,
-                    threshold: DateComponents(minute: limitMinutes)
-                )
-            }
+            // Do NOT use includesPastActivity:true — that causes the threshold to count
+            // all usage since midnight including time before monitoring started, which
+            // makes the shield fire before the user's actual limit is reached.
+            let event = DeviceActivityEvent(
+                applications: selectionToShield.applicationTokens,
+                categories: selectionToShield.categoryTokens,
+                webDomains: selectionToShield.webDomainTokens,
+                threshold: DateComponents(minute: remainingMinutes)
+            )
             
             do {
                 try center.startMonitoring(.dailyLimit, during: schedule, events: [.limitReached: event])
-                print("AppLockService: Started DeviceActivity monitoring. Threshold: \(limitMinutes) mins")
+                print("AppLockService: Started DeviceActivity monitoring. Remaining threshold: \(remainingMinutes) mins (total: \(totalAllowedMinutes), used: \(todaysTotalUsageMinutes))")
             } catch {
                 print("AppLockService: Failed to start DeviceActivity monitoring: \(error)")
             }
@@ -236,6 +229,13 @@ class AppLockService {
                     totalAllowedMinutes: totalAllowedMinutes,
                     todaysTotalUsageMinutes: todaysTotalUsageMinutes
                 )
+            } else if let totalAllowedMinutes = sharedDefaults?.object(forKey: "totalAllowedMinutes") as? Int,
+                      let todaysTotalUsageMinutes = sharedDefaults?.object(forKey: "todaysTotalUsageMinutes") as? Int {
+                // Selection changed but no explicit limit check yet — restart monitoring with updated remaining time
+                if #available(iOS 16.0, *) {
+                    liftShields()
+                    startMonitoring(totalAllowedMinutes: totalAllowedMinutes, todaysTotalUsageMinutes: todaysTotalUsageMinutes)
+                }
             }
         } catch {
             print("Failed to save selection: \(error)")

@@ -56,7 +56,32 @@ class AppLockService {
   }
 
   Future<bool> requestNotificationPermission() async {
+    if (Platform.isIOS) {
+      try {
+        // Use native UNUserNotificationCenter for reliable iOS permission request
+        final bool granted = await _lockChannel.invokeMethod('requestNotificationPermission');
+        return granted;
+      } catch (e) {
+        // Fallback to permission_handler if native channel fails
+        final status = await Permission.notification.request();
+        return status.isGranted;
+      }
+    }
     final status = await Permission.notification.request();
+    return status.isGranted;
+  }
+
+  Future<bool> checkNotificationPermission() async {
+    if (Platform.isIOS) {
+      try {
+        final bool granted = await _lockChannel.invokeMethod('checkNotificationPermission');
+        return granted;
+      } catch (e) {
+        final status = await Permission.notification.status;
+        return status.isGranted;
+      }
+    }
+    final status = await Permission.notification.status;
     return status.isGranted;
   }
 

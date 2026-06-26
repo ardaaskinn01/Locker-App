@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import SwiftUI
+import UserNotifications
 
 #if canImport(FamilyControls)
 import FamilyControls
@@ -176,6 +177,20 @@ struct AppPickerView: View {
                 #else
                 result(0)
                 #endif
+                
+            case "requestNotificationPermission":
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                    DispatchQueue.main.async {
+                        result(granted)
+                    }
+                }
+                
+            case "checkNotificationPermission":
+                UNUserNotificationCenter.current().getNotificationSettings { settings in
+                    DispatchQueue.main.async {
+                        result(settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional)
+                    }
+                }
                 
             default:
                 result(FlutterMethodNotImplemented)
